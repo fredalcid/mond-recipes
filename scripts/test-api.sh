@@ -6,7 +6,7 @@
 set -euo pipefail
 : "${DATABASE_URL:?Set DATABASE_URL to an empty test database}"
 POSTGREST="${POSTGREST:-postgrest}"
-command -v "$POSTGREST" >/dev/null || { echo "PostgREST not found. Install it or set POSTGREST=/path/to/postgrest." >POSTGREST="${POSTGREST:-postgrest}"2; exit 1; }
+command -v "$POSTGREST" >/dev/null || { echo "PostgREST not found. Install it or set POSTGREST=/path/to/postgrest." >&2; exit 1; }
 export JWT_SECRET="test-secret-for-local-integration-only-0123456789"
 dir=$(mktemp -d)
 
