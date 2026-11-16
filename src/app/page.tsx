@@ -22,6 +22,9 @@ import type { Post } from "@/lib/community/types";
 
 export const revalidate = 300;
 
+// The homepage's own address, so search engines don't index copies with tracking parameters.
+export const metadata = { alternates: { canonical: "/" } };
+
 async function loadHome() {
   const data = getData();
   try {

@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/lib/auth";
 import { canEditContent } from "@/lib/admin";
-import { recipePayloadSchema, toDatabasePayload, validateImage } from "@/lib/admin-schema";
+import { recipePayloadSchema, toDatabasePayload, checkImageFile } from "@/lib/admin-schema";
 import { fieldErrors } from "@/lib/validation";
 
 export type EditorState = { status: "idle" | "error"; message?: string; errors?: Partial<Record<string, string>> };
@@ -32,7 +32,7 @@ export async function saveRecipeAction(_prev: EditorState, formData: FormData): 
   // Optional new photo. The bucket also enforces type and size limits.
   const file = formData.get("image");
   if (file instanceof File && file.size > 0) {
-    const problem = validateImage(file);
+    const problem = await checkImageFile(file);
     if (problem) return { status: "error", errors: { image: problem } };
     const path = `recipes/${payload.slug}-${randomUUID().slice(0, 8)}.${EXT[file.type]}`;
     const { error } = await supabase.storage.from("recipe-images").upload(path, file, { contentType: file.type, upsert: false });
@@ -44,7 +44,7 @@ export async function saveRecipeAction(_prev: EditorState, formData: FormData): 
   let ogPath: string | null | undefined = parsed.data.remove_og_image ? null : undefined;
   const og = formData.get("og_image");
   if (og instanceof File && og.size > 0) {
-    const problem = validateImage(og);
+    const problem = await checkImageFile(og);
     if (problem) return { status: "error", errors: { og_image: problem } };
     ogPath = `social/${payload.slug}-${randomUUID().slice(0, 8)}.${EXT[og.type]}`;
     const { error } = await supabase.storage.from("recipe-images").upload(ogPath, og, { contentType: og.type, upsert: false });

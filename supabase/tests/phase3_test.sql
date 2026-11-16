@@ -68,11 +68,11 @@ select pg_temp.expect((select clicks = 2 and retailer = 'Example Shop' from publ
 reset role;
 set role service_role;
 create temp table t_tokens as select * from public.newsletter_request('Cook@Example.com', 'Yes, send me the newsletter', 'test', '198.51.100.7');
-grant select on t_tokens to anon, postgres;
+grant select on t_tokens to anon, postgres, service_role;
 reset role;
 select pg_temp.expect((select status = 'pending' and confirm_token_hash is not null and confirm_token_hash <> (select confirm_token from t_tokens)
   from public.newsletter_subscribers where email = 'cook@example.com'), 'sign-up is pending and the token is stored only as a hash');
-set role anon;
+set role service_role; -- the website calls these with the server key only
 select pg_temp.expect((select not public.newsletter_confirm(repeat('a', 64))), 'a wrong token confirms nothing');
 select pg_temp.expect((select not public.newsletter_confirm('short')), 'malformed tokens are rejected');
 select pg_temp.expect((select public.newsletter_confirm((select confirm_token from t_tokens))), 'the emailed link confirms the subscription');
@@ -81,17 +81,17 @@ reset role;
 select pg_temp.expect((select status = 'confirmed' and confirmed_at is not null from public.newsletter_subscribers where email = 'cook@example.com'), 'subscriber is confirmed');
 set role service_role;
 select pg_temp.expect((select already_confirmed and confirm_token is null from public.newsletter_request('cook@example.com', 'again', 'test', null)), 'signing up again does not reset a confirmed subscriber');
-set role anon;
+set role service_role; -- the website calls these with the server key only
 select pg_temp.expect((select public.newsletter_unsubscribe((select unsubscribe_token from t_tokens))), 'the unsubscribe link works');
 reset role;
 select pg_temp.expect((select status = 'unsubscribed' from public.newsletter_subscribers where email = 'cook@example.com'), 'subscriber is unsubscribed');
 update public.newsletter_subscribers set confirm_sent_at = now() - interval '8 days', status = 'pending', confirm_token_hash = 'x' where email = 'cook@example.com';
 set role service_role;
 create temp table t_old as select * from public.newsletter_request('late@example.com', 'consent', 'test', null);
-grant select on t_old to anon, postgres;
+grant select on t_old to anon, postgres, service_role;
 reset role;
 update public.newsletter_subscribers set confirm_sent_at = now() - interval '8 days' where email = 'late@example.com';
-set role anon;
+set role service_role; -- the website calls these with the server key only
 select pg_temp.expect((select not public.newsletter_confirm((select confirm_token from t_old))), 'confirmation links expire after 7 days');
 
 -- Rate limiting

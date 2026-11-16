@@ -14,9 +14,10 @@ type Stats = Record<string, number | string>;
 export default async function AdminDashboard() {
   const member = (await getCurrentMember())!;
   const db = (await createClient())!;
-  const [{ data, error }, { data: indexing }] = await Promise.all([
+  const [{ data, error }, { data: indexing }, { data: officer }] = await Promise.all([
     db.rpc("admin_dashboard_stats"),
     db.from("site_settings").select("value").eq("key", "seo.allow_indexing").maybeSingle(),
+    db.from("site_settings").select("value").eq("key", "privacy.officer_email").maybeSingle(),
   ]);
   const s = (data ?? {}) as Stats;
   const n = (k: string) => Number(s[k] ?? 0);
@@ -108,6 +109,15 @@ export default async function AdminDashboard() {
           <FormMessage tone="error">
             <Link href="/admin/shop" className="font-semibold underline">
               {n("products_broken")} shop {n("products_broken") === 1 ? "link is" : "links are"} broken
+            </Link>
+            .
+          </FormMessage>
+        )}
+        {superAdmin && !(typeof officer?.value === "string" && officer.value) && (
+          <FormMessage tone="error">
+            The privacy officer&apos;s contact details aren&apos;t set. Quebec law requires them on the Privacy page.{" "}
+            <Link href="/admin/settings" className="font-semibold underline">
+              Add them in Settings
             </Link>
             .
           </FormMessage>

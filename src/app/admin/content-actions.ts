@@ -7,7 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/lib/auth";
 import { canEditContent } from "@/lib/admin";
-import { validateImage } from "@/lib/admin-schema";
+import { checkImageFile } from "@/lib/admin-schema";
 import { articleSchema, formToObject, placementSchema, productSchema, retailerSchema, videoSchema } from "@/lib/admin-content-schema";
 import { fieldErrors } from "@/lib/validation";
 import type { AdminFormState } from "@/components/admin/AdminForm";
@@ -30,7 +30,7 @@ async function superAdmin(): Promise<SupabaseClient | null> {
 async function upload(db: SupabaseClient, fd: FormData, field: string, folder: string, slug: string): Promise<{ path: string | null; error?: string }> {
   const file = fd.get(field);
   if (!(file instanceof File) || file.size === 0) return { path: null };
-  const problem = validateImage(file);
+  const problem = await checkImageFile(file);
   if (problem) return { path: null, error: problem };
   const path = `${folder}/${slug}-${randomUUID().slice(0, 8)}.${EXT[file.type]}`;
   const { error } = await db.storage.from("media").upload(path, file, { contentType: file.type });

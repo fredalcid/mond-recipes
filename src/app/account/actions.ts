@@ -9,6 +9,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { getCurrentMember } from "@/lib/auth";
 import { fieldErrors } from "@/lib/validation";
 import { NOTIFICATION_PREFS, checkUpload } from "@/lib/community/types";
+import { checkImageFile } from "@/lib/admin-schema";
 
 export type AccountState = { status: "idle" | "success" | "error"; message?: string; errors?: Partial<Record<string, string>> };
 
@@ -52,7 +53,7 @@ export async function updateProfile(_prev: AccountState, fd: FormData): Promise<
   const update: Record<string, unknown> = { ...fields, country_id };
   const file = fd.get("avatar");
   if (file instanceof File && file.size > 0) {
-    const problem = checkUpload(file, "avatar");
+    const problem = checkUpload(file, "avatar") ?? (await checkImageFile(file));
     if (problem) return { status: "error", errors: { avatar: problem } };
     const path = `${member.id}/avatar-${randomUUID().slice(0, 8)}.${EXT[file.type]}`;
     const { error } = await db.storage.from("avatars").upload(path, file, { contentType: file.type });

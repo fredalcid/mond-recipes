@@ -29,6 +29,8 @@ export const joinSchema = z
     email: emailSchema,
     password: passwordSchema,
     terms: z.literal("on", { message: "Please accept the Terms and Community Guidelines." }),
+    // Quebec requires a parent's consent for children under 14; accounts are for 14 and older.
+    age: z.literal("on", { message: "You must be 14 or older to create an account." }),
   });
 
 export const signInSchema = z.object({
@@ -49,9 +51,18 @@ export const newsletterSchema = z.object({
 
 /** Only allow redirects to paths on this site (prevents open redirects). */
 export function safeNextPath(next: unknown, fallback = "/account"): string {
-  if (typeof next !== "string") return fallback;
-  if (!next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return fallback;
-  return next;
+  if (typeof next !== "string" || next.length > 500) return fallback;
+  // Control characters and backslashes are dropped or rewritten by browsers ("/\t/evil.com" becomes
+  // "//evil.com"), so they are refused outright; then the result must stay on this site.
+  if (!next.startsWith("/") || /[\u0000-\u001f\u007f\\]/.test(next)) return fallback;
+  try {
+    const base = "https://mond.invalid";
+    const url = new URL(next, base);
+    if (url.origin !== base) return fallback;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return fallback;
+  }
 }
 
 export type FieldErrors = Partial<Record<string, string>>;

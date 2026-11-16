@@ -64,7 +64,13 @@ describe("formatting", () => {
 });
 
 describe("validation", () => {
-  const valid = { name: "Ada Lovelace", email: "ADA@Example.com ", password: "tomatoes2026", terms: "on" };
+  const valid = { name: "Ada Lovelace", email: "ADA@Example.com ", password: "tomatoes2026", terms: "on", age: "on" };
+
+  it("requires confirming the person is 14 or older", () => {
+    const { age: _age, ...noAge } = valid;
+    void _age;
+    expect(joinSchema.safeParse(noAge).success).toBe(false);
+  });
 
   it("accepts a valid registration and normalises the email", () => {
     const r = joinSchema.safeParse(valid);
@@ -96,4 +102,17 @@ describe("validation", () => {
     expect(safeNextPath("/\\evil.example")).toBe("/account");
     expect(safeNextPath(undefined, "/")).toBe("/");
   });
+});
+
+describe("safeNextPath (redirect tricks)", () => {
+  it.each(["//evil.example", "/\\evil.example", "/\t/evil.example", "/\n/evil.example", "/%2F%2Fevil.example/../x", "javascript:alert(1)", "https:evil.example"])(
+    "keeps %s on this site",
+    (next) => {
+      const out = safeNextPath(next);
+      expect(out.startsWith("/")).toBe(true);
+      expect(out.startsWith("//")).toBe(false);
+      expect(new URL(out, "https://mondrecipes.com").host).toBe("mondrecipes.com");
+    },
+  );
+  it("keeps the query and fragment of a normal path", () => expect(safeNextPath("/recipes?country=japan#top")).toBe("/recipes?country=japan#top"));
 });

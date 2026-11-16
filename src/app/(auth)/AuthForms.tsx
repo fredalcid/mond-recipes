@@ -29,10 +29,16 @@ export function JoinForm() {
         <input type="checkbox" name="terms" className="mt-0.5 h-5 w-5 shrink-0 accent-forest-900" />
         <span>
           I agree to the <Link href="/terms" className="font-semibold text-forest-900 underline">Terms of Service</Link> and{" "}
-          <Link href="/community-guidelines" className="font-semibold text-forest-900 underline">Community Guidelines</Link>.
+          <Link href="/community-guidelines" className="font-semibold text-forest-900 underline">Community Guidelines</Link>, and I have read the{" "}
+          <Link href="/privacy" className="font-semibold text-forest-900 underline">Privacy Policy</Link>.
         </span>
       </label>
       {state.errors?.terms && <p className="-mt-3 text-sm font-medium text-danger">{state.errors.terms}</p>}
+      <label className="flex items-start gap-3 text-sm text-ink-muted">
+        <input type="checkbox" name="age" className="mt-0.5 h-5 w-5 shrink-0 accent-forest-900" />
+        <span>I am 14 years old or older.</span>
+      </label>
+      {state.errors?.age && <p className="-mt-3 text-sm font-medium text-danger">{state.errors.age}</p>}
       <Turnstile resetKey={state} />
       <Button type="submit" disabled={pending}>{pending ? "Creating your account…" : "Create account"}</Button>
     </form>

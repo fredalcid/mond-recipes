@@ -35,6 +35,8 @@ export type SiteSettings = {
   logoUrl: string | null;
   contactEmail: string | null;
   mailingAddress: string | null;
+  /** Person in charge of the protection of personal information (Quebec Law 25), published on the Privacy page. */
+  privacyOfficer: { name: string; title: string; email: string } | null;
   social: { label: string; href: string }[];
   footerNote: string;
   sections: Record<HomepageSection, boolean>;
@@ -50,6 +52,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   logoUrl: null,
   contactEmail: null,
   mailingAddress: null,
+  privacyOfficer: null,
   social: [],
   footerNote: "Recipes and photos on this site are original or used with permission.",
   sections: Object.fromEntries(HOMEPAGE_SECTIONS.map(([k]) => [k, true])) as Record<HomepageSection, boolean>,
@@ -84,6 +87,14 @@ export function parseSettings(rows: { key: string; value: unknown }[]): SiteSett
     logoUrl: storageUrl("media", strOrNull(m.get("brand.logo_path"))),
     contactEmail: strOrNull(m.get("contact.email")),
     mailingAddress: strOrNull(m.get("contact.mailing_address")),
+    privacyOfficer:
+      strOrNull(m.get("privacy.officer_name")) && strOrNull(m.get("privacy.officer_email"))
+        ? {
+            name: strOrNull(m.get("privacy.officer_name"))!,
+            title: strOrNull(m.get("privacy.officer_title")) ?? "Person in charge of the protection of personal information",
+            email: strOrNull(m.get("privacy.officer_email"))!,
+          }
+        : null,
     social,
     footerNote: str(m.get("footer.note"), d.footerNote),
     sections,

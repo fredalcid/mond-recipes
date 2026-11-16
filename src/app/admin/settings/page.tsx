@@ -56,6 +56,17 @@ export default async function SettingsPage() {
                 hint="Shown in the footer. Canada's anti-spam law requires it in every newsletter."
               />
             </div>
+            <fieldset className="flex flex-col gap-3 rounded-xl border border-sand p-4">
+              <legend className="px-1 text-sm font-semibold">Privacy officer (required by Quebec&apos;s Law 25)</legend>
+              <p className="text-xs text-ink-muted">
+                The person in charge of protecting personal information. By default this is the business owner. Their title and contact details are published on the Privacy page.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <TextInput name="privacy_officer_name" label="Name" defaultValue={s.privacyOfficer?.name} />
+                <TextInput name="privacy_officer_title" label="Title" defaultValue={s.privacyOfficer?.title} hint="e.g. Owner and privacy officer" />
+                <TextInput name="privacy_officer_email" label="Email" type="email" defaultValue={s.privacyOfficer?.email} />
+              </div>
+            </fieldset>
             <div className="grid gap-4 sm:grid-cols-2">
               {SOCIAL_NETWORKS.map(([key, label]) => (
                 <TextInput key={key} name={`social_${key}`} label={label} defaultValue={socialByNetwork.get(key)} hint="Full https:// address, or empty." />

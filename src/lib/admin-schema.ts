@@ -110,3 +110,25 @@ export function validateImage(file: File | null): string | null {
   if (file.size > MAX_IMAGE_BYTES) return "Images must be 8 MB or smaller.";
   return null;
 }
+
+/** Reads the first bytes of an upload and reports the real image type (the browser's label can be faked). */
+export function sniffImageType(bytes: Uint8Array): string | null {
+  const b = (i: number) => bytes[i];
+  if (b(0) === 0xff && b(1) === 0xd8 && b(2) === 0xff) return "image/jpeg";
+  if (b(0) === 0x89 && b(1) === 0x50 && b(2) === 0x4e && b(3) === 0x47) return "image/png";
+  const ascii = (from: number, to: number) => String.fromCharCode(...bytes.slice(from, to));
+  if (ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
+  if (ascii(4, 8) === "ftyp" && /^(avif|avis|mif1|msf1)$/.test(ascii(8, 12))) return "image/avif";
+  return null;
+}
+
+/** validateImage plus a check that the file really is the image type it claims to be. */
+export async function checkImageFile(file: File | null): Promise<string | null> {
+  const problem = validateImage(file);
+  if (problem || !file || file.size === 0) return problem;
+  const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+  const real = sniffImageType(head);
+  if (!real) return "This file isn't a valid JPEG, PNG, WebP or AVIF image.";
+  if (real !== file.type) return "The file type doesn't match its contents. Save the image again and retry.";
+  return null;
+}

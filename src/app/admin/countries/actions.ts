@@ -8,7 +8,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/lib/auth";
 import { canEditContent } from "@/lib/admin";
-import { validateImage } from "@/lib/admin-schema";
+import { checkImageFile } from "@/lib/admin-schema";
 import { fieldErrors } from "@/lib/validation";
 import type { AdminFormState } from "@/components/admin/AdminForm";
 
@@ -41,7 +41,7 @@ async function upload(db: SupabaseClient, fd: FormData, field: string, folder: s
     const text = await file.text();
     if (/<script|on\w+\s*=|javascript:|<foreignObject/i.test(text)) return { path: null, error: "This SVG contains scripts or links and can't be used." };
   } else {
-    const problem = validateImage(file);
+    const problem = await checkImageFile(file);
     if (problem) return { path: null, error: problem };
   }
   const path = `${folder}/${slug}-${randomUUID().slice(0, 8)}.${EXT[file.type]}`;

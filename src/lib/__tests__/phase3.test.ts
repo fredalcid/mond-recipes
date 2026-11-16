@@ -87,3 +87,21 @@ describe("admin forms", () => {
     expect(placementSchema.safeParse({ ...base, fallback_kind: "house", house_text: "x", house_url: "javascript:alert(1)" }).success).toBe(false);
   });
 });
+
+describe("upload checks", async () => {
+  const { checkImageFile, sniffImageType } = await import("@/lib/admin-schema");
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+  const jpg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0]);
+  const webp = new TextEncoder().encode("RIFF\0\0\0\0WEBPVP8 ");
+  const html = new TextEncoder().encode("<html><script>alert(1)</script>");
+  it("recognises real image types", () => {
+    expect(sniffImageType(png)).toBe("image/png");
+    expect(sniffImageType(jpg)).toBe("image/jpeg");
+    expect(sniffImageType(webp)).toBe("image/webp");
+    expect(sniffImageType(html)).toBeNull();
+  });
+  it("accepts a real PNG", async () => expect(await checkImageFile(new File([png], "a.png", { type: "image/png" }))).toBeNull());
+  it("refuses a web page renamed to .png", async () => expect(await checkImageFile(new File([html], "a.png", { type: "image/png" }))).toMatch(/isn't a valid/));
+  it("refuses a JPEG labelled as PNG", async () => expect(await checkImageFile(new File([jpg], "a.png", { type: "image/png" }))).toMatch(/doesn't match/));
+  it("refuses SVG and other types", async () => expect(await checkImageFile(new File([html], "a.svg", { type: "image/svg+xml" }))).toMatch(/JPEG, PNG/));
+});

@@ -57,7 +57,7 @@ export default async function CountriesPage() {
           <h2 id="all-countries" className="text-2xl font-semibold text-forest-900">
             All countries
           </h2>
-          <p className="mt-2 mb-6 text-ink-muted">Recipes from these countries are on the way. Want to share one? Members can submit recipes once the community opens.</p>
+          <p className="mt-2 mb-6 text-ink-muted">Recipes from these countries are on the way. Cook something from one of them? Members can share their own recipes.</p>
           <CountryFilter>
             <ul className="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-4">
               {others.map((c) => (

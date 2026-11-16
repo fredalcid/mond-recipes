@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath, updateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/lib/auth";
-import { validateImage } from "@/lib/admin-schema";
+import { checkImageFile } from "@/lib/admin-schema";
 import { HOMEPAGE_SECTIONS, SOCIAL_NETWORKS } from "@/lib/settings";
 import type { AdminFormState } from "@/components/admin/AdminForm";
 
@@ -35,7 +35,7 @@ async function save(values: Record<string, unknown>): Promise<AdminFormState> {
 async function uploadImage(fd: FormData, field: string, folder: string): Promise<{ path?: string | null; error?: string }> {
   const file = fd.get(field);
   if (!(file instanceof File) || file.size === 0) return {};
-  const problem = validateImage(file);
+  const problem = await checkImageFile(file);
   if (problem) return { error: problem };
   const db = await superAdminDb();
   if (!db) return { error: "Only super admins can upload here." };
@@ -70,8 +70,17 @@ export async function saveContact(_p: AdminFormState, fd: FormData): Promise<Adm
     if (!/^https:\/\/\S+$/.test(url)) errors[`social_${key}`] = `${label}: use the full https:// address.`;
     else social.push({ network: key, url });
   }
+  const officerEmail = text(fd, "privacy_officer_email", 120);
+  if (officerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(officerEmail)) errors.privacy_officer_email = "Enter a valid email address.";
   if (Object.keys(errors).length) return { status: "error", errors };
-  return save({ "contact.email": orNull(email), "contact.mailing_address": orNull(text(fd, "mailing_address", 300)), "social.links": social });
+  return save({
+    "contact.email": orNull(email),
+    "contact.mailing_address": orNull(text(fd, "mailing_address", 300)),
+    "social.links": social,
+    "privacy.officer_name": orNull(text(fd, "privacy_officer_name", 100)),
+    "privacy.officer_title": orNull(text(fd, "privacy_officer_title", 120)),
+    "privacy.officer_email": orNull(officerEmail),
+  });
 }
 
 export async function saveHomepage(_p: AdminFormState, fd: FormData): Promise<AdminFormState> {

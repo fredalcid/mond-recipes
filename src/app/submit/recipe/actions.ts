@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/lib/auth";
-import { recipePayloadSchema, toDatabasePayload, validateImage } from "@/lib/admin-schema";
+import { recipePayloadSchema, toDatabasePayload, checkImageFile } from "@/lib/admin-schema";
 import { fieldErrors } from "@/lib/validation";
 import { slugify } from "@/lib/format";
 import { friendlyError } from "@/lib/community/types";
@@ -56,7 +56,7 @@ export async function saveMemberRecipe(_prev: EditorState, formData: FormData): 
   const payload = toDatabasePayload(v);
   const file = formData.get("image");
   if (file instanceof File && file.size > 0) {
-    const problem = validateImage(file);
+    const problem = await checkImageFile(file);
     if (problem) return { status: "error", errors: { image: problem } };
     const path = `members/${member.id}/${slugify(title).slice(0, 40) || "recipe"}-${randomUUID().slice(0, 8)}.${EXT[file.type]}`;
     const { error } = await db.storage.from("recipe-images").upload(path, file, { contentType: file.type, upsert: false });

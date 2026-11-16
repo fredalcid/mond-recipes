@@ -11,6 +11,7 @@ const LINKS = [
   ["/notifications", "Notifications"],
   ["/account/notifications", "Notification settings"],
   ["/account/blocked", "Blocked members"],
+  ["/account/privacy", "My data"],
   ["/account/delete", "Delete account"],
 ] as const;
 
