@@ -20,6 +20,11 @@ import {
  * cached and Row Level Security only ever returns published content.
  */
 let anon: SupabaseClient | null = null;
+/** Cookie-free client for public, cacheable reads. */
+export function publicClient(): SupabaseClient {
+  return db();
+}
+
 function db(): SupabaseClient {
   anon ??= createSupabase(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   return anon;
@@ -35,7 +40,7 @@ function fail(error: { message: string } | null, what: string) {
   if (error) throw new Error(`${what}: ${error.message}`);
 }
 
-function mapSearchRow(r: any): RecipeSummary {
+export function mapSearchRow(r: any): RecipeSummary {
   return {
     id: r.id,
     slug: r.slug,
@@ -93,7 +98,7 @@ const RECIPE_SELECT = `
   recipe_dietary_tags ( dietary_tags ( name, slug ) ),
   recipe_allergens ( allergens ( name, slug ) ),
   drink_categories ( name, slug, is_alcoholic ),
-  author:profiles ( display_name, username ),
+  author:profiles ( id, display_name, username ),
   recipe_sources ( source_type, description, url )
 `;
 
@@ -150,7 +155,7 @@ function mapDetail(r: any): RecipeDetail {
       ? { name: r.drink_categories.name, slug: r.drink_categories.slug, isAlcoholic: r.drink_categories.is_alcoholic }
       : null,
     alcoholPercent: r.alcohol_percent == null ? null : Number(r.alcohol_percent),
-    author: r.author ? { displayName: r.author.display_name, username: r.author.username } : null,
+    author: r.author ? { id: r.author.id, displayName: r.author.display_name, username: r.author.username } : null,
     sources: (r.recipe_sources ?? []).map((s: any) => ({ type: s.source_type, description: s.description, url: s.url })),
     publishedAt: r.published_at,
     updatedAt: r.updated_at,

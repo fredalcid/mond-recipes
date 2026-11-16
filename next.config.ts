@@ -20,6 +20,9 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Photo uploads go through server actions (default limit 1 MB). Photos are capped at 8 MB;
+  // videos are uploaded straight from the browser to Supabase Storage.
+  experimental: { serverActions: { bodySizeLimit: "9mb" } },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

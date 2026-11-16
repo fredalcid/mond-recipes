@@ -7,5 +7,6 @@ export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 export function isSupabaseConfigured(): boolean {
-  return supabaseUrl.startsWith("https://") && supabaseAnonKey.length > 20;
+  // https everywhere, except a local Supabase during development and tests.
+  return (supabaseUrl.startsWith("https://") || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(supabaseUrl)) && supabaseAnonKey.length > 20;
 }

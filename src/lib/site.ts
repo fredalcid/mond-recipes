@@ -50,17 +50,7 @@ export const footerNav: readonly { heading: string; links: NavItem[] }[] = [
  * They render an honest "coming in Phase N" page instead of a broken link.
  */
 export const plannedPages: Record<string, { title: string; phase: number; summary: string }> = {
-  community: {
-    title: "Community",
-    phase: 4,
-    summary: "Member recipes, cooking photos, comments, follows and community challenges.",
-  },
   privacy: { title: "Privacy Policy", phase: 6, summary: "Drafted before launch and reviewed by a lawyer." },
   terms: { title: "Terms of Service", phase: 6, summary: "Drafted before launch and reviewed by a lawyer." },
   cookies: { title: "Cookie Policy", phase: 6, summary: "Drafted with the consent tool before launch." },
-  "community-guidelines": {
-    title: "Community Guidelines",
-    phase: 4,
-    summary: "Rules for sharing recipes, photos and comments. Published together with the community.",
-  },
 };

@@ -38,6 +38,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               ["/admin/articles", "Articles"],
               ["/admin/videos", "Videos"],
               ["/admin/shop", "Shop"],
+              ["/admin/moderation", "Moderation"],
+              ["/admin/challenges", "Challenges"],
+              ...(member.roles.some((r) => r === "super_admin" || r === "moderator") ? [["/admin/members", "Members"]] : []),
               ...(member.roles.includes("super_admin")
                 ? [
                     ["/admin/ads", "Advertising"],

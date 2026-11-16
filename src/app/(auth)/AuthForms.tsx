@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { Field, FormMessage } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
+import { Turnstile } from "@/components/ui/Turnstile";
 import { joinAction, requestResetAction, signInAction, updatePasswordAction } from "./actions";
 import { initialAuthState } from "./types";
 
@@ -32,6 +33,7 @@ export function JoinForm() {
         </span>
       </label>
       {state.errors?.terms && <p className="-mt-3 text-sm font-medium text-danger">{state.errors.terms}</p>}
+      <Turnstile resetKey={state} />
       <Button type="submit" disabled={pending}>{pending ? "Creating your account…" : "Create account"}</Button>
     </form>
   );
@@ -50,6 +52,7 @@ export function SignInForm({ next }: { next?: string }) {
           Forgot your password?
         </Link>
       </div>
+      <Turnstile resetKey={state} />
       <Button type="submit" disabled={pending}>{pending ? "Signing in…" : "Sign in"}</Button>
     </form>
   );
@@ -62,6 +65,7 @@ export function ResetRequestForm() {
     <form action={action} noValidate className="flex flex-col gap-5">
       {state.message && <FormMessage tone="error">{state.message}</FormMessage>}
       <Field label="Email" name="email" type="email" autoComplete="email" required error={state.errors?.email} />
+      <Turnstile resetKey={state} />
       <Button type="submit" disabled={pending}>{pending ? "Sending…" : "Send reset link"}</Button>
     </form>
   );

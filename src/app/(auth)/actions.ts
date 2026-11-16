@@ -19,6 +19,16 @@ const NOT_CONFIGURED: AuthFormState = {
   message: "Member accounts aren't switched on yet. Please check back soon.",
 };
 
+/** Turnstile token from the form, checked by Supabase when bot protection is switched on. */
+function captcha(formData: FormData): { captchaToken?: string } {
+  const t = String(formData.get("captchaToken") ?? "");
+  return t ? { captchaToken: t } : {};
+}
+
+function captchaFailed(message: string) {
+  return /captcha/i.test(message);
+}
+
 async function origin(): Promise<string> {
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host");
@@ -39,11 +49,13 @@ export async function joinAction(_prev: AuthFormState, formData: FormData): Prom
     options: {
       emailRedirectTo: `${await origin()}/auth/confirm?next=/account`,
       data: { display_name: parsed.data.name },
+      ...captcha(formData),
     },
   });
 
   // Same message whether or not the address already has an account,
   // so the form can't be used to discover who is registered.
+  if (error && captchaFailed(error.message)) return { status: "error", message: "Please complete the spam check and try again." };
   if (error && !/already registered/i.test(error.message)) {
     if (/password/i.test(error.message)) return { status: "error", errors: { password: error.message } };
     console.error("sign up failed", error.message);
@@ -63,8 +75,9 @@ export async function signInAction(_prev: AuthFormState, formData: FormData): Pr
   const supabase = await createClient();
   if (!supabase) return NOT_CONFIGURED;
 
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { error } = await supabase.auth.signInWithPassword({ ...parsed.data, options: captcha(formData) });
   if (error) {
+    if (captchaFailed(error.message)) return { status: "error", message: "Please complete the spam check and try again." };
     if (/not confirmed/i.test(error.message)) {
       return { status: "error", message: "Please confirm your email first. Check your inbox for the link we sent." };
     }
@@ -83,7 +96,9 @@ export async function requestResetAction(_prev: AuthFormState, formData: FormDat
 
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
     redirectTo: `${await origin()}/auth/confirm?next=/update-password`,
+    ...captcha(formData),
   });
+  if (error && captchaFailed(error.message)) return { status: "error", message: "Please complete the spam check and try again." };
   if (error) console.error("reset request failed", error.message);
 
   return {

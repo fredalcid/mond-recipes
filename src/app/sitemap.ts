@@ -20,6 +20,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url("/articles"), changeFrequency: "weekly", priority: 0.7 },
     { url: url("/shop"), changeFrequency: "weekly", priority: 0.5 },
     { url: url("/about"), changeFrequency: "yearly", priority: 0.3 },
+    { url: url("/community"), changeFrequency: "daily", priority: 0.6 },
+    { url: url("/community/challenges"), changeFrequency: "weekly", priority: 0.4 },
+    { url: url("/community-guidelines"), changeFrequency: "yearly", priority: 0.2 },
   ];
   try {
     const data = getData();

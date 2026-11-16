@@ -47,7 +47,7 @@ export type RecipeDetail = RecipeSummary & {
   allergens: { name: string; slug: string }[];
   drinkCategory: { name: string; slug: string; isAlcoholic: boolean } | null;
   alcoholPercent: number | null;
-  author: { displayName: string; username: string | null } | null;
+  author: { id?: string; displayName: string; username: string | null } | null;
   sources: { type: string; description: string | null; url: string | null }[];
   publishedAt: string | null;
   updatedAt: string | null;

@@ -14,3 +14,13 @@ export async function requireStaff(): Promise<CurrentMember | null> {
   const m = await getCurrentMember();
   return isStaff(m) ? m : null;
 }
+
+/** Matches public.is_moderator() in the database: moderators, editors and super admins review community content. */
+export function canModerate(m: CurrentMember | null): boolean {
+  return Boolean(m && m.emailVerified && m.roles.some((r) => r === "super_admin" || r === "editor" || r === "moderator"));
+}
+
+/** Suspending accounts and featuring members is for moderators and super admins. */
+export function canManageMembers(m: CurrentMember | null): boolean {
+  return Boolean(m && m.emailVerified && m.roles.some((r) => r === "super_admin" || r === "moderator"));
+}

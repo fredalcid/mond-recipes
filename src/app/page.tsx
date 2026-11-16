@@ -16,6 +16,8 @@ import { ArticleCard } from "@/components/content/ArticleCard";
 import { VideoCard } from "@/components/content/VideoCard";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { latestPublicPhotos } from "@/lib/community/server";
+import type { Post } from "@/lib/community/types";
 
 export const revalidate = 300;
 
@@ -35,12 +37,14 @@ async function loadHome() {
     const trending = popular.items.filter((r) => r.saveCount > 0 || r.ratingCount > 0).slice(0, 4);
     const hasActivity = popular.items.some((r) => r.saveCount > 0 || r.ratingCount > 0);
     const content = getContent();
-    const [articles, videos, products] = await Promise.all([
+    const [articles, videos, products, photos] = await Promise.all([
       content.listArticles({ pageSize: 3 }).then((r) => r.items).catch(() => []),
       content.listVideos(3).catch(() => []),
       content.listProducts().catch(() => []),
+      latestPublicPhotos(6).catch(() => []),
     ]);
     return {
+      photos,
       articles,
       videos,
       products: [...products.filter((p) => p.isFeatured), ...products.filter((p) => !p.isFeatured)].slice(0, 4),
@@ -53,7 +57,7 @@ async function loadHome() {
     };
   } catch (e) {
     console.error(e);
-    return { articles: [], videos: [], products: [], sample: false, countries: [], popular: [], popularIsNewest: true, trending: [], drinks: [] };
+    return { photos: [], articles: [], videos: [], products: [], sample: false, countries: [], popular: [], popularIsNewest: true, trending: [], drinks: [] };
   }
 }
 
@@ -70,7 +74,7 @@ export default async function HomePage() {
       </div>
       <DrinksSection recipes={home.drinks} />
       <CategoriesSection />
-      <CommunitySection />
+      <CommunitySection photos={home.photos} />
       <ArticlesSection articles={home.articles} videos={home.videos} />
       <ShopSection products={home.products} />
       <NewsletterSection />
@@ -234,7 +238,7 @@ function CategoriesSection() {
   );
 }
 
-function CommunitySection() {
+function CommunitySection({ photos }: { photos: Post[] }) {
   return (
     <section aria-labelledby="community-title" className="py-16">
       <Container>
@@ -255,17 +259,28 @@ function CommunitySection() {
               </LinkButton>
             </div>
           </div>
-          <div className="rounded-card border border-dashed border-sand-strong bg-white/70 p-6">
-            <p className="font-semibold text-forest-900">Member photos and featured cooks will appear here.</p>
-            <p className="mt-1 text-sm text-ink-muted">
-              Only approved contributions from real members are shown. The community opens in Phase 4.
-            </p>
-            <div className="mt-5 grid grid-cols-3 gap-3" aria-hidden="true">
-              <PhotoPlaceholder tone="cream" label="" className="aspect-square rounded-xl" />
-              <PhotoPlaceholder tone="olive" label="" className="aspect-square rounded-xl" />
-              <PhotoPlaceholder tone="gold" label="" className="aspect-square rounded-xl" />
+          {photos.length > 0 ? (
+            <ul className="grid grid-cols-3 gap-3">
+              {photos.map((p) => (
+                <li key={p.id}>
+                  <Link href={`/community/posts/${p.id}`} className="block aspect-square overflow-hidden rounded-xl bg-white">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- member upload */}
+                    <img src={p.media[0]?.url ?? ""} alt={p.media[0]?.alt || `Photo by ${p.author.displayName}`} loading="lazy" className="h-full w-full object-cover" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="rounded-card border border-dashed border-sand-strong bg-white/70 p-6">
+              <p className="font-semibold text-forest-900">Member photos will appear here.</p>
+              <p className="mt-1 text-sm text-ink-muted">Only approved contributions from real members are shown.</p>
+              <div className="mt-5 grid grid-cols-3 gap-3" aria-hidden="true">
+                <PhotoPlaceholder tone="cream" label="" className="aspect-square rounded-xl" />
+                <PhotoPlaceholder tone="olive" label="" className="aspect-square rounded-xl" />
+                <PhotoPlaceholder tone="gold" label="" className="aspect-square rounded-xl" />
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </Container>
     </section>

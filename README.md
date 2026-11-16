@@ -91,8 +91,9 @@ npm run test:db    # security tests; needs DATABASE_URL pointing at an EMPTY tes
    3. `supabase/migrations/20261116000300_recipe_engine.sql`
    4. `supabase/migrations/20261116000400_recipe_admin.sql`
    5. `supabase/migrations/20261116000500_editorial_shop.sql`
-   6. `supabase/seed.sql`
-   7. *(Optional, for a staging site only)* `supabase/sample_content.sql`: the 13 sample recipes. Remove them before launch with `delete from public.recipes where is_sample;`
+   6. `supabase/migrations/20261116000600_community.sql`
+   7. `supabase/seed.sql`
+   8. *(Optional, for a staging site only)* `supabase/sample_content.sql`: the 13 sample recipes. Remove them before launch with `delete from public.recipes where is_sample;`
 
    (Or with the Supabase CLI: `supabase link` then `supabase db push`, then run `seed.sql`.)
 3. **Authentication → Sign In / Providers → Email:** keep **Confirm email** turned on.
@@ -106,7 +107,9 @@ npm run test:db    # security tests; needs DATABASE_URL pointing at an EMPTY tes
      `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/update-password`
 6. **Authentication → Emails → SMTP settings:** connect a real email service (e.g. Resend or Postmark) with your domain. Supabase's built-in sender is for testing only and sends very few emails per hour.
 7. **Project Settings → API:** copy the Project URL and the anon/publishable key into your environment variables. Also copy the **service_role / secret** key into `SUPABASE_SERVICE_ROLE_KEY` (server only, never `NEXT_PUBLIC_`).
-8. Make yourself Super Admin: register on the site, confirm your email, then run in the SQL Editor:
+8. **Storage → Settings:** set the global file size limit to at least **100 MB** so members can upload short videos (the free plan allows at most 50 MB; with that limit, videos over 50 MB are refused with a clear message). Large videos are uploaded straight from the browser to Storage and never pass through Hostinger.
+9. **Authentication → Attack Protection (Bot and Abuse Protection):** turn on **CAPTCHA protection**, choose **Turnstile**, and paste the Turnstile **secret key**. Put the matching **site key** in `NEXT_PUBLIC_TURNSTILE_SITE_KEY`. Create both keys free at dash.cloudflare.com → Turnstile. Turn on both settings at the same time: with CAPTCHA on in Supabase but no site key on the website, nobody can sign in.
+10. Make yourself Super Admin: register on the site, confirm your email, then run in the SQL Editor:
 
    ```sql
    insert into public.user_roles (user_id, role)
@@ -156,6 +159,12 @@ curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" https://www.mondrecipes.com/
 
 ---
 
+## Tests
+
+- `npm test`: unit tests
+- `npm run test:db`: database security and logic checks (needs an empty PostgreSQL 16 database in `DATABASE_URL`)
+- `npm run test:api`: runs the site's community queries through PostgREST, the API Supabase uses (needs PostgREST 12 as `POSTGREST`)
+
 ## Pages
 
 | Address | What it is |
@@ -171,7 +180,16 @@ curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" https://www.mondrecipes.com/
 | `/go/<product>` | Counts the click (no personal data) and sends the visitor to the retailer |
 | `/about`, `/contact`, `/advertise`, `/affiliate-disclosure` | Information pages |
 | `/newsletter/confirm`, `/newsletter/unsubscribe` | Newsletter double opt-in links |
-| `/admin` … | Staff only: dashboard, recipes, articles, videos, shop (with click report and link checks), advertising and newsletter (super admins) |
+| `/community` | Member photos, videos and tips (Latest, Popular, Photos, Videos, Tips), challenges, featured cooks, recently shared recipes |
+| `/community/new` | Post a photo (up to 6), a video (upload or YouTube link) or a tip, optionally linked to a recipe or a challenge |
+| `/community/posts/<post>` | A post with likes, comments, replies, sharing and reporting |
+| `/community/challenges`, `/community/challenges/<challenge>` | Community challenges and their entries |
+| `/members/<username>` | Public profile: recipes, photos, videos, tips, optional favourites, followers, follow / block / report |
+| `/submit/recipe` | Members share a recipe (draft, then send for review) |
+| `/account/…` | Overview, profile, my contributions, saved recipes, notification settings, blocked members, delete account |
+| `/notifications` | Follows, likes, comments, replies, reviews, review decisions, activity from people you follow |
+| `/community-guidelines` | Community rules (draft) |
+| `/admin` … | Staff only: dashboard, recipes, articles, videos, shop (with click report and link checks), moderation queue and reports, members (suspend, restore, feature), challenges, advertising and newsletter (super admins) |
 
 When Supabase isn't connected, the site runs on the labelled **sample library** (`src/lib/demo/library.ts`), so every page can be reviewed. Once Supabase is connected, the site reads only from the database.
 
@@ -226,16 +244,30 @@ Photo areas show placeholders until properly licensed food photography is upload
 - Newsletter double opt-in: confirmation email, 7-day link, one-click unsubscribe, hashed tokens, rate limits, CSV export of confirmed subscribers
 - Contact form (with topic, spam honeypot and rate limit), About, Advertise and Affiliate Disclosure pages
 
+## What works in Phase 4
+
+- **Profiles**: username, picture, bio, country, followers and following, optional public favourites
+- **Follow, block and report**: blocking hides the other member's content from you and stops them following, liking or commenting on your content
+- **Posts**: photos, videos (upload up to 100 MB or YouTube) and cooking tips, linked to a recipe ("I made this") or a challenge
+- **Comments and replies** on recipes and posts (one level of replies), with editing, deleting, likes and reporting
+- **Ratings and reviews**: one per member per recipe, editable; recipe ratings are calculated only from real reviews; you can't rate your own recipe
+- **Member recipes**: the same editor as the admin, without web address, search or publishing fields; drafts, then "Send for review"
+- **Moderation**: new recipes and posts wait for review; comments and reviews appear straight away and can be reported; three reports hide an item until a moderator checks it; approve, ask for changes, decline, remove, restore; every decision is logged and the member is notified with the moderator's note
+- **Members admin**: suspend (with a reason the member sees) and restore; feature cooks on the community page. Suspended members' content is hidden and they can't take part
+- **Notifications** in the site with a bell and unread count, and per-type settings
+- **Account deletion** removes the account and everything the member shared, including uploaded files
+- **Spam protection**: Cloudflare Turnstile on sign-up, sign-in and password reset (through Supabase), and per-member limits in the database (for example 10 posts an hour, 30 comments an hour)
+
 ## Known limitations
 
-- Community pages show a clear "Coming in Phase 4" page.
 - Email sending, AdSense, Analytics and the link checker were built against the services' documented APIs but not tested with live accounts. They stay off until their keys are set.
 - Shop sample products have no links and are labelled “Sample”; the Shop needs real products from affiliate programs you have joined.
-- Ratings, reviews and member cooking photos arrive with the community (Phase 4). Recipe pages say "No ratings yet".
 - Nutrition information isn't stored yet; recipe pages say so.
 - The admin covers recipes only. Countries, regions, cuisines and ingredient densities are edited in Supabase until the full admin (Phase 5).
 - The admin and saving were tested through the database functions and form validation, but not yet against a live Supabase project.
-- Profile editing, saved recipes, notification settings and account deletion arrive with the community (Phase 4).
-- Spam protection on registration (Cloudflare Turnstile) is added in Phase 4. Newsletter and contact forms are rate limited now.
+- Community features were tested against the real database API (PostgREST) with a stand-in for Supabase's sign-in service. Real sign-in, file uploads to Storage, Turnstile and account deletion (which needs the service key) were not tested with a live Supabase project.
+- Notifications appear on the site only; they are not emailed.
+- Uploaded videos play as they are (no automatic compression or thumbnails). Ask members to keep videos short; if video becomes popular, a video service such as Cloudflare Stream or Mux can be added.
+- Images are not scanned automatically; moderators review every photo and video before it appears.
 - Legal pages (Privacy, Terms, Cookies) and the Affiliate Disclosure draft must be written or checked and reviewed by a lawyer before launch.
 - The logo file is small (312 px). A high-resolution PNG or SVG is needed for print and large banners.

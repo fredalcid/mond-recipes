@@ -10,6 +10,10 @@ import { VerificationBadge } from "./VerificationBadge";
 import { RecipeActions } from "./RecipeActions";
 import { RecipeInteractive } from "./RecipeInteractive";
 import { AdSlot } from "@/components/ads/AdSlot";
+import { ReviewsSection } from "@/components/community/ReviewsSection";
+import { CommentThread } from "@/components/community/CommentThread";
+import { CookedThis } from "@/components/community/CookedThis";
+import { ReportButton } from "@/components/community/ReportButton";
 import { formatMinutes, formatRating } from "@/lib/format";
 import { recipeHref, type RecipeDetail, type RecipeSummary } from "@/lib/data/types";
 import { site } from "@/lib/site";
@@ -64,7 +68,20 @@ export function RecipeView({ recipe, related, crumbs }: { recipe: RecipeDetail; 
               ))}
             </div>
             <p className="mt-3 text-sm text-ink-muted">
-              {recipe.isSample ? "Sample recipe for design review" : recipe.author ? `Recipe by ${recipe.author.displayName}` : "From the Mònd Recipes kitchen"}
+              {recipe.isSample ? (
+                "Sample recipe for design review"
+              ) : recipe.author?.username ? (
+                <>
+                  Recipe by{" "}
+                  <Link href={`/members/${recipe.author.username}`} className="font-semibold text-forest-900 hover:underline">
+                    {recipe.author.displayName}
+                  </Link>
+                </>
+              ) : recipe.author ? (
+                `Recipe by ${recipe.author.displayName}`
+              ) : (
+                "From the Mònd Recipes kitchen"
+              )}
               <span aria-hidden="true"> · </span>
               <span aria-hidden="true" className="text-gold-600">
                 ★{" "}
@@ -167,21 +184,27 @@ export function RecipeView({ recipe, related, crumbs }: { recipe: RecipeDetail; 
 
         <AdSlot id="recipe_bottom" />
 
-        <div className="mt-12 grid gap-6 md:grid-cols-2" data-print-hide>
-          <section className="rounded-card border border-sand-strong bg-white p-6">
-            <h2 className="text-2xl font-semibold text-forest-900">Nutrition</h2>
-            <p className="mt-2 text-ink-muted">Nutrition information isn&apos;t available for this recipe yet.</p>
-          </section>
-          <section className="rounded-card border border-sand-strong bg-white p-6">
+        <section className="mt-12 rounded-card border border-sand-strong bg-white p-6" data-print-hide>
+          <h2 className="text-2xl font-semibold text-forest-900">Nutrition</h2>
+          <p className="mt-2 text-ink-muted">Nutrition information isn&apos;t available for this recipe yet.</p>
+        </section>
+
+        {!recipe.isSample && (
+          <div className="mt-14 flex flex-col gap-14" data-print-hide>
+            <CookedThis recipeId={recipe.id} recipeSlug={recipe.slug} />
+            <ReviewsSection recipeId={recipe.id} authorId={recipe.author?.id ?? null} />
+            <CommentThread target={{ recipeId: recipe.id }} title="Questions & comments" />
+            <div className="flex justify-end">
+              <ReportButton target="recipe" id={recipe.id} ownerId={recipe.author?.id ?? null} compact label="Report a problem with this recipe" />
+            </div>
+          </div>
+        )}
+        {recipe.isSample && (
+          <section className="mt-6 rounded-card border border-sand-strong bg-white p-6" data-print-hide>
             <h2 className="text-2xl font-semibold text-forest-900">Ratings &amp; reviews</h2>
-            <p className="mt-2 text-ink-muted">
-              {recipe.ratingCount > 0
-                ? formatRating(recipe.ratingAverage, recipe.ratingCount)
-                : "No ratings yet."}{" "}
-              Reviews and cooking photos from members open with the community.
-            </p>
+            <p className="mt-2 text-ink-muted">No ratings yet. Sample recipes can&apos;t be reviewed.</p>
           </section>
-        </div>
+        )}
       </Container>
 
       {related.length > 0 && (
