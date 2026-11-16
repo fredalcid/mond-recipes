@@ -1,26 +1,81 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Mònd Recipes design tokens.
+ * Colours are sampled from the Mònd Recipes logo:
+ *   forest green #1E3713 (badge), gold #F2B537 / #F29D28 (rings),
+ *   olive leaf #809A1C (leaves), cream #FFFFF0 (chef hat), ivory #FAF4EE (background).
+ * Text colours are darker shades chosen to pass WCAG AA contrast on ivory.
+ */
+@theme {
+  --color-ivory: #faf4ee;
+  --color-cream: #fffff0;
+  --color-sand: #f1e7da;
+  --color-sand-strong: #e3d6c4;
+
+  --color-forest-950: #13240c;
+  --color-forest-900: #1e3713;
+  --color-forest-800: #2a4a1c;
+  --color-forest-700: #3a6127;
+  --color-forest-100: #e4ead9;
+
+  --color-olive-700: #556a10;
+  --color-olive-500: #809a1c;
+
+  --color-gold-500: #f2b537;
+  --color-gold-600: #f29d28;
+  --color-gold-800: #8a5a10;
+
+  --color-ink: #1f2a1a;
+  --color-ink-muted: #56604e;
+
+  --color-danger: #a12a1c;
+  --color-success: #2f6b2a;
+
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces Variable", ui-serif, Georgia, serif;
+
+  --radius-card: 1rem;
+  --shadow-card: 0 1px 2px rgb(30 55 19 / 0.06), 0 8px 24px -12px rgb(30 55 19 / 0.18);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--color-ivory);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    text-rendering: optimizeLegibility;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  a {
+    color: inherit;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-gold-600);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection {
+    background: var(--color-gold-500);
+    color: var(--color-forest-950);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
