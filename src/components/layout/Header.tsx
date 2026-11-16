@@ -3,6 +3,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Container } from "@/components/ui/Container";
 import { primaryNav } from "@/lib/site";
 import { AuthNav } from "./AuthNav";
+import { MenuBar } from "./MenuBar";
 import { MobileMenu } from "./MobileMenu";
 import { NavLinks } from "./NavLinks";
 
@@ -35,6 +36,7 @@ export function Header({ name, logoUrl }: { name?: string; logoUrl?: string | nu
           <MobileMenu />
         </div>
       </Container>
+      <MenuBar items={primaryNav} />
     </header>
   );
 }
