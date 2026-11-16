@@ -16,7 +16,8 @@ type Props = { searchParams: Promise<{ status?: string; q?: string; kind?: strin
 export default async function AdminRecipes({ searchParams }: Props) {
   if (!canEditContent(await getCurrentMember())) notFound();
   const { status, q, kind } = await searchParams;
-  const supabase = (await createClient())!;
+  const supabase = await createClient();
+  if (!supabase) return null;
   let query = supabase
     .from("recipes")
     .select("id, title, slug, kind, status, verification, is_sample, updated_at")

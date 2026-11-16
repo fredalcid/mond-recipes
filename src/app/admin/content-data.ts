@@ -1,10 +1,12 @@
 import "server-only";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- untyped PostgREST rows, mapped explicitly */
 
 export async function db() {
-  return (await createClient())!;
+  // Without the database the admin layout shows a "not connected" message instead of the page.
+  return (await createClient()) ?? notFound();
 }
 
 /** Published recipes and drinks, for "related recipes" pickers. */

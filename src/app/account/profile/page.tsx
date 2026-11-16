@@ -7,8 +7,10 @@ import { ProfileForm } from "./ProfileForm";
 export const metadata: Metadata = { title: "Edit profile", robots: { index: false } };
 
 export default async function ProfilePage() {
-  const member = (await getCurrentMember())!;
-  const db = (await createClient())!;
+  const member = await getCurrentMember();
+  if (!member) return null; // the layout shows sign-in or "not connected"
+  const db = await createClient();
+  if (!db) return null;
   const [{ data: p }, { data: countries }] = await Promise.all([
     db.from("profiles").select("display_name, username, bio, avatar_path, show_saved, country:countries ( slug )").eq("id", member.id).single(),
     db.from("countries").select("slug, name").order("name"),

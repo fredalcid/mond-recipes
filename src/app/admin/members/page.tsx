@@ -26,7 +26,8 @@ export default async function MembersAdmin({ searchParams }: Props) {
   if (!canManageMembers(member)) notFound();
   const sp = await searchParams;
   const q = (sp.q ?? "").trim().slice(0, 60);
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   let query = db.from("profiles").select("id, username, display_name, is_suspended, suspended_reason, is_featured, follower_count, created_at").order("created_at", { ascending: false }).limit(100);
   if (q) query = query.or(`username.ilike.%${q.replace(/[%,()]/g, "")}%,display_name.ilike.%${q.replace(/[%,()]/g, "")}%`);
   if (sp.filter === "suspended") query = query.eq("is_suspended", true);

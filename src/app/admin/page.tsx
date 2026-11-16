@@ -12,8 +12,10 @@ type Stats = Record<string, number | string>;
 
 /** Real counts from the database at the moment the page opens. Nothing is estimated. */
 export default async function AdminDashboard() {
-  const member = (await getCurrentMember())!;
-  const db = (await createClient())!;
+  const member = await getCurrentMember();
+  if (!member) return null; // the layout shows sign-in or "not connected"
+  const db = await createClient();
+  if (!db) return null;
   const [{ data, error }, { data: indexing }, { data: officer }] = await Promise.all([
     db.rpc("admin_dashboard_stats"),
     db.from("site_settings").select("value").eq("key", "seo.allow_indexing").maybeSingle(),

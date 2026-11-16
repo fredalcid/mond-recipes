@@ -46,7 +46,8 @@ export default async function MemberAdmin({ params, searchParams }: Props) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const sp = await searchParams;
   const superAdmin = viewer!.roles.includes("super_admin");
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
 
   const { data: p } = await db.from("profiles").select(`${MEMBER_COLUMNS}, bio, is_suspended, suspended_reason, suspended_at, follower_count, following_count, created_at`).eq("id", id).maybeSingle();
   if (!p) notFound();

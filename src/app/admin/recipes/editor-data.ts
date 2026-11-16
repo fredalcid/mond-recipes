@@ -1,11 +1,12 @@
 import "server-only";
+import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { EditorOptions } from "@/components/admin/RecipeEditor";
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- untyped PostgREST rows, mapped explicitly */
 
 export async function loadEditorOptions(): Promise<EditorOptions> {
-  const supabase = (await createClient())!;
+  const supabase = (await createClient()) ?? notFound();
   const [countries, cuisines, cats, diets, allergens, drinks, ings] = await Promise.all([
     supabase.from("countries").select("slug, name, regions ( slug, name )").order("name"),
     supabase.from("cuisines").select("name").order("name"),
@@ -27,7 +28,7 @@ export async function loadEditorOptions(): Promise<EditorOptions> {
 }
 
 export async function loadRecipeForEditing(id: string) {
-  const supabase = (await createClient())!;
+  const supabase = (await createClient()) ?? notFound();
   const { data, error } = await supabase
     .from("recipes")
     .select(`*, recipe_ingredients ( position, quantity, unit, note, group_label, ingredients ( name ) ),

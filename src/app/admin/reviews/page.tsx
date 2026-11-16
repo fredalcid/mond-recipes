@@ -28,7 +28,8 @@ export default async function ReviewsAdmin({ searchParams }: Props) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
   const size = 50;
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   let q = db
     .from("recipe_reviews")
     .select(`id, rating, body, status, report_count, created_at, recipe:recipes ( title, slug, kind ), author:profiles!recipe_reviews_author_id_fkey ( ${MEMBER_COLUMNS} )`)

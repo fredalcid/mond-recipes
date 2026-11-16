@@ -21,7 +21,8 @@ export default async function SeoPage() {
   const member = await getCurrentMember();
   if (!canEditContent(member)) notFound();
   const superAdmin = member!.roles.includes("super_admin");
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   const [{ data: settingsRows }, noDescription, noPhoto, hidden, thinCountries, articlesNoDescription] = await Promise.all([
     db.from("site_settings").select("key, value"),
     db.from("recipes").select("id, title").eq("status", "published").is("meta_description", null).is("summary", null).limit(50),

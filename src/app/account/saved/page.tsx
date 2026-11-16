@@ -7,7 +7,8 @@ import { listSavedRecipes } from "@/lib/community/server";
 export const metadata: Metadata = { title: "Saved recipes", robots: { index: false } };
 
 export default async function SavedRecipesPage() {
-  const member = (await getCurrentMember())!;
+  const member = await getCurrentMember();
+  if (!member) return null; // the layout shows sign-in or "not connected"
   const recipes = await listSavedRecipes(member.id);
   return (
     <div>

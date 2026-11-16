@@ -93,8 +93,9 @@ npm run test:db    # security tests; needs DATABASE_URL pointing at an EMPTY tes
    5. `supabase/migrations/20261116000500_editorial_shop.sql`
    6. `supabase/migrations/20261116000600_community.sql`
    7. `supabase/migrations/20261116000700_administration.sql`
-   8. `supabase/seed.sql`
-   9. *(Optional, for a staging site only)* `supabase/sample_content.sql`: the 13 sample recipes. Remove them before launch with `delete from public.recipes where is_sample;`
+   8. `supabase/migrations/20261116000800_hardening.sql`
+   9. `supabase/seed.sql`
+   10. *(Optional, for a staging site only)* `supabase/sample_content.sql`: the 13 sample recipes. Remove them before launch with `delete from public.recipes where is_sample;`
 
    (Or with the Supabase CLI: `supabase link` then `supabase db push`, then run `seed.sql`.)
 3. **Authentication → Sign In / Providers → Email:** keep **Confirm email** turned on.
@@ -155,7 +156,7 @@ curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" https://www.mondrecipes.com/
 1. Apply at adsense.google.com once the site has real, original content (thin or sample content is usually refused).
 2. When approved, set `NEXT_PUBLIC_ADSENSE_CLIENT` (`ca-pub-…`) and rebuild.
 3. Create ad units in AdSense, then paste each unit ID in **Admin → Advertising** and switch the placement on.
-4. Add the `ads.txt` line Google gives you to `public/ads.txt`.
+4. Paste the `ads.txt` line Google gives you into **Admin → Advertising → ads.txt** (served at `/ads.txt`).
 5. Visitors in the EEA, UK and Switzerland: Google requires a Google-certified consent platform for personalised ads there. The built-in banner works for Canada and Quebec (ads and analytics only load after consent), but add a certified CMP (for example Google's own "Privacy & messaging") before targeting European traffic.
 
 ---
@@ -165,6 +166,14 @@ curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" https://www.mondrecipes.com/
 - `npm test`: unit tests
 - `npm run test:db`: database security and logic checks (needs an empty PostgreSQL 16 database in `DATABASE_URL`)
 - `npm run test:api`: runs the site's community and admin queries through PostgREST, the API Supabase uses (needs PostgREST 12 as `POSTGREST`)
+- `npm run test:e2e`: browser tests (Playwright) on desktop Chrome and a phone-sized screen: search, filters, recipe tools, forms, Shop links, automated WCAG 2.1 AA checks (axe), SEO tags and security headers. Build first (`npm run build`), then run. Set `CHROME_PATH` to use an installed Chrome, or run `npx playwright install` once. Firefox and Safari (WebKit) projects are configured too: `npx playwright test --project=firefox --project=webkit --project=mobile-safari`.
+
+Results of the last full run are in [docs/testing-results.md](docs/testing-results.md). Before launch, also go through [docs/manual-testing.md](docs/manual-testing.md).
+
+## Before launch
+
+- [docs/launch-checklist.md](docs/launch-checklist.md): every step that needs your accounts, keys or approval
+- [docs/costs.md](docs/costs.md): estimated monthly costs
 
 ## Pages
 
@@ -293,5 +302,7 @@ The database enforces every permission on its own, so a hidden menu link is neve
 - Notifications appear on the site only; they are not emailed.
 - Uploaded videos play as they are (no automatic compression or thumbnails). Ask members to keep videos short; if video becomes popular, a video service such as Cloudflare Stream or Mux can be added.
 - Images are not scanned automatically; moderators review every photo and video before it appears.
-- Legal pages (Privacy, Terms, Cookies) and the Affiliate Disclosure draft must be written or checked and reviewed by a lawyer before launch.
+- The Privacy Policy, Terms of Service, Cookie Policy and Affiliate Disclosure are drafts written to follow Quebec's Law 25, PIPEDA and CASL. They must be reviewed by a lawyer before launch. The site is in English only; ask your lawyer about French versions under Quebec's language law.
+- Browser tests ran on Chrome (desktop and phone size) only. Firefox and Safari are configured in the test suite but couldn't be downloaded in the build environment; run them before launch, and check on a real iPhone and Android phone.
+- Lighthouse scores (sample mode, phone settings): performance 97–99, accessibility 100, best practices 100. SEO shows 69 only because indexing is switched off until launch.
 - The logo file is small (312 px). A high-resolution PNG or SVG is needed for print and large banners.

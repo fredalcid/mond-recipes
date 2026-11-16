@@ -25,7 +25,8 @@ const POST_STATUS: Record<string, string> = {
 };
 
 export default async function ContributionsPage({ searchParams }: { searchParams: Promise<{ deleted?: string; sent?: string }> }) {
-  const member = (await getCurrentMember())!;
+  const member = await getCurrentMember();
+  if (!member) return null; // the layout shows sign-in or "not connected"
   const { deleted, sent } = await searchParams;
   const [recipes, posts] = await Promise.all([listMemberRecipes(member.id), listPosts({ authorId: member.id, pageSize: 60 })]);
 

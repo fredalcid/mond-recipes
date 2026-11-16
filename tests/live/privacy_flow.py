@@ -1,0 +1,36 @@
+import json
+exec(open(__import__('os').path.join(__import__('os').path.dirname(__file__),'community_flow.py')).read().split('log=[]')[0])
+USERS.update({"admin":"00000000-0000-0000-0000-00000000000a"})
+log=[]
+def ok(label, cond, extra=''):
+    log.append(('PASS' if cond else 'FAIL', label, extra))
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    br=p.chromium.launch(executable_path="/usr/bin/google-chrome", args=["--no-sandbox"])
+    def as_user(name):
+        ctx=br.new_context(accept_downloads=True); ctx.add_cookies([session_cookie(name)]); return ctx, ctx.new_page()
+    ctx,pg=as_user("bea")
+    pg.goto(B+"/account/privacy"); ok("My data page", pg.locator("h1").inner_text()=="My data")
+    with pg.expect_download() as d: pg.get_by_role("link", name="Download my data").click()
+    data=json.load(open(d.value.path()))
+    ok("export has the member's own data", data["account"]["email"]=="bea@example.com" and data["profile"]["username"] is not None, list(data.keys()))
+    ok("export includes their comments", any("red lentils" in c["body"] for c in data["comments"]) or len(data["comments"])>=1, len(data["comments"]))
+    ok("export has no one else's comments", all(c.get("body")!="Looks really delicious" for c in data["comments"]), "")
+    ctx.close()
+    ctx=br.new_context(); pg=ctx.new_page()
+    r=pg.request.get(B+"/account/export", max_redirects=0); ok("visitors can't export", r.status in (302,307), r.status)
+    pg.goto(B+"/join"); pg.fill("input[name=name]","Test Person"); pg.fill("input[name=email]","t@example.com"); pg.fill("input[name=password]","tomatoes2026")
+    pg.check("input[name=terms]"); pg.get_by_role("button", name="Create account").click(); pg.wait_for_timeout(1200)
+    ok("join refuses without the age confirmation", pg.get_by_text("You must be 14 or older to create an account.").count()==1)
+    pg.goto(B+"/privacy"); ok("privacy page says contact details come before launch", pg.get_by_text("Contact details will be published here before launch").count()==1)
+    ctx.close()
+    ctx,pg=as_user("admin")
+    pg.goto(B+"/admin"); ok("dashboard reminds about the privacy officer", pg.get_by_text("privacy officer").count()>=1)
+    pg.goto(B+"/admin/settings")
+    pg.fill("input[name=privacy_officer_name]","Alex Tremblay"); pg.fill("input[name=privacy_officer_title]","Owner and privacy officer"); pg.fill("input[name=privacy_officer_email]","privacy@example.com")
+    pg.locator("form:has(input[name=privacy_officer_name])").get_by_role("button").last.click(); pg.wait_for_timeout(1500)
+    pg.goto(B+"/privacy"); ok("privacy page shows the officer", pg.get_by_text("Alex Tremblay").count()==1 and pg.get_by_text("privacy@example.com").count()>=1)
+    pg.goto(B+"/admin"); ok("reminder gone once set", pg.get_by_text("privacy officer’s contact details aren’t set").count()+pg.get_by_text("privacy officer's contact details aren't set").count()==0)
+    ctx.close(); br.close()
+for l in log: print(*l)
+print(sum(1 for l in log if l[0]=="PASS"), "passed,", sum(1 for l in log if l[0]!="PASS"), "problems")

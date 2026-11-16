@@ -20,7 +20,8 @@ export default async function EditMemberRecipe({ params, searchParams }: Props) 
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const member = await getCurrentMember();
   if (!member) redirect(`/sign-in?next=/submit/recipe/${id}`);
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   const { data: row } = await db.from("recipes").select("author_id, status").eq("id", id).maybeSingle();
   if (!row || row.author_id !== member.id) notFound();
   if (!["draft", "pending", "rejected"].includes(row.status)) redirect("/account/contributions");

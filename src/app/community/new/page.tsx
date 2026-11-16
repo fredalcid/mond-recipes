@@ -19,7 +19,8 @@ export default async function NewPostPage({ searchParams }: Props) {
   const member = await getCurrentMember();
   if (!member) redirect("/sign-in?next=/community/new");
   const sp = await searchParams;
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   const [{ data: profile }, challenges, recipe] = await Promise.all([
     db.from("profiles").select("is_suspended").eq("id", member.id).single(),
     listChallenges(),

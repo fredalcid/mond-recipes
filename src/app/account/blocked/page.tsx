@@ -10,8 +10,10 @@ import { unblockMember } from "../actions";
 export const metadata: Metadata = { title: "Blocked members", robots: { index: false } };
 
 export default async function BlockedPage() {
-  const member = (await getCurrentMember())!;
-  const db = (await createClient())!;
+  const member = await getCurrentMember();
+  if (!member) return null; // the layout shows sign-in or "not connected"
+  const db = await createClient();
+  if (!db) return null;
   const { data } = await db.from("blocks").select(BLOCKED_SELECT).eq("blocker_id", member.id);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST row
   const blocked = ((data ?? []) as any[]).map((r) => memberFromRow(r.member));

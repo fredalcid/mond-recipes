@@ -19,7 +19,8 @@ type Row = { id: number; slug: string; name: string; iso2: string; is_featured: 
 export default async function CountriesAdmin({ searchParams }: Props) {
   if (!canEditContent(await getCurrentMember())) notFound();
   const { q = "", filter = "" } = await searchParams;
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   let query = db.from("countries").select("id, slug, name, iso2, is_featured, is_indexable, intro, hero_image_path, regions ( count ), recipe_countries ( count )").order("name");
   if (q.trim()) query = query.ilike("name", `%${q.trim().replace(/[%_,()]/g, "")}%`);
   if (filter === "featured") query = query.eq("is_featured", true);

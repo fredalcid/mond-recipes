@@ -67,7 +67,8 @@ export default async function AuditPage({ searchParams }: Props) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
   const size = 100;
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
 
   let q = db.from("admin_activity_log").select("id, actor_id, action, entity_type, entity_id, details, created_at").order("created_at", { ascending: false });
   if (sp.entity && /^[a-z_]+$/.test(sp.entity)) q = q.eq("entity_type", sp.entity);

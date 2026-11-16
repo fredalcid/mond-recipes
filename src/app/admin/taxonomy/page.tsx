@@ -29,7 +29,8 @@ export default async function TaxonomyPage({ searchParams }: Props) {
   const sp = await searchParams;
   const tab = tabByKey(sp.tab);
   const q = (sp.q ?? "").trim().slice(0, 60);
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   const isIngredients = tab.key === "ingredients";
 
   let query = db.from(tab.table).select(isIngredients ? "*, ingredient_aliases ( alias )" : "*").order(tab.order).order("name");

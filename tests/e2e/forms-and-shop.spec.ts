@@ -6,7 +6,7 @@ test.describe("forms show clear errors", () => {
     await page.goto("/join");
     await page.getByRole("button", { name: /create account/i }).click();
     const main = page.locator("main");
-    await expect(main).toContainText(/enter your name|add your name|name/i);
+    await expect(main).toContainText(/enter your name/i);
     await main.getByLabel("Email", { exact: true }).fill("not-an-email");
     await main.getByLabel("Password", { exact: true }).fill("short");
     await page.getByRole("button", { name: /create account/i }).click();

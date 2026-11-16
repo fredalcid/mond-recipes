@@ -33,7 +33,8 @@ export default async function EditCountry({ params, searchParams }: Props) {
   if (!canEditContent(await getCurrentMember())) notFound();
   const { slug } = await params;
   const { saved } = await searchParams;
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   const { data: c } = await db
     .from("countries")
     .select("*, regions ( id, slug, name, description, display_order ), country_aliases ( alias ), country_cuisines ( cuisine_id ), country_featured_recipes ( recipe_id, position )")

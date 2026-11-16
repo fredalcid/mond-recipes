@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { useConsent } from "@/components/privacy/ConsentManager";
 import type { AdPlacement } from "@/lib/content/types";
 
 const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? "";
+
+/** Pages without publisher content (sign-in, account, admin, forms, legal): never show ads there (AdSense policy). */
+const NO_ADS = /^\/(admin|account|auth|sign-in|join|reset-password|update-password|notifications|submit|community\/new|privacy|terms|cookies)(\/|$)/;
+export const adsAllowedOn = (path: string) => !NO_ADS.test(path);
 
 /**
  * One advertising placement. Shows a Google AdSense unit only when the
@@ -17,7 +22,8 @@ const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? "";
 export function AdUnit({ placement }: { placement: AdPlacement | undefined }) {
   const consent = useConsent();
   const ref = useRef<HTMLModElement>(null);
-  const showAd = Boolean(placement?.isEnabled && placement.adsenseSlot && ADSENSE_CLIENT && consent?.ads);
+  const allowedHere = adsAllowedOn(usePathname() ?? "/");
+  const showAd = Boolean(allowedHere && placement?.isEnabled && placement.adsenseSlot && ADSENSE_CLIENT && consent?.ads);
 
   useEffect(() => {
     if (!showAd || !ref.current || ref.current.dataset.adsbygoogleStatus) return;
@@ -29,7 +35,7 @@ export function AdUnit({ placement }: { placement: AdPlacement | undefined }) {
     }
   }, [showAd]);
 
-  if (!placement) return null;
+  if (!placement || !allowedHere) return null;
 
   if (showAd) {
     return (

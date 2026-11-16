@@ -14,7 +14,8 @@ export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   const member = await getCurrentMember();
   if (!member?.roles.includes("super_admin")) notFound();
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   // Read straight from the database (not the cache) so the form always shows the saved values.
   const { data } = await db.from("site_settings").select("key, value");
   const s = parseSettings(data ?? []);

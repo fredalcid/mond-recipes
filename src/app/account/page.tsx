@@ -13,9 +13,11 @@ type Props = { searchParams: Promise<{ verified?: string; password?: string }> }
 const roleLabels = { super_admin: "Super Admin", editor: "Editor", moderator: "Community Moderator" } as const;
 
 export default async function AccountPage({ searchParams }: Props) {
-  const member = (await getCurrentMember())!;
+  const member = await getCurrentMember();
+  if (!member) return null; // the layout shows sign-in or "not connected"
   const { verified, password } = await searchParams;
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   const [{ data: profile }, recipes, posts] = await Promise.all([
     db.from("profiles").select("username, follower_count, following_count, is_suspended, suspended_reason").eq("id", member.id).single(),
     db.from("recipes").select("status").eq("author_id", member.id),

@@ -116,3 +116,14 @@ describe("safeNextPath (redirect tricks)", () => {
   );
   it("keeps the query and fragment of a normal path", () => expect(safeNextPath("/recipes?country=japan#top")).toBe("/recipes?country=japan#top"));
 });
+
+import { adsAllowedOn } from "@/components/ads/AdUnit";
+describe("ad placement rules", () => {
+  it("never shows ads on sign-in, account, admin, form or legal pages", () => {
+    for (const p of ["/admin", "/admin/recipes", "/account", "/sign-in", "/join", "/reset-password", "/submit/recipe", "/community/new", "/privacy", "/terms", "/cookies", "/notifications"])
+      expect(adsAllowedOn(p)).toBe(false);
+  });
+  it("allows ads on content pages", () => {
+    for (const p of ["/", "/recipes/jollof-rice", "/articles/x", "/countries/italy", "/community", "/community/posts/1", "/termsandmore"]) expect(adsAllowedOn(p)).toBe(true);
+  });
+});

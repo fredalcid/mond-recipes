@@ -25,7 +25,8 @@ const SERIES: [keyof Row, string][] = [
 export default async function AnalyticsPage({ searchParams }: { searchParams: Promise<{ days?: string }> }) {
   const d = Number((await searchParams).days);
   const days = PERIODS.includes(d) ? d : 30;
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   const [{ data: series, error }, saved, rated, clicks, countries] = await Promise.all([
     db.rpc("admin_activity_series", { p_days: days }),
     db.from("recipes").select("title, slug, kind, save_count").eq("status", "published").gt("save_count", 0).order("save_count", { ascending: false }).limit(10),

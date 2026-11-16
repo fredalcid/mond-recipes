@@ -41,7 +41,8 @@ export default async function ModerationPage({ searchParams }: Props) {
   if (!canModerate(member)) notFound();
   const sp = await searchParams;
   const tab = TABS.some(([k]) => k === sp.tab) ? sp.tab! : "recipes";
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
 
   const [recipes, posts, reports] = await Promise.all([
     db
@@ -238,7 +239,8 @@ function PostQueue({ rows }: { rows: any[] }) {
 
 async function ReportQueue({ rows }: { rows: any[] }) {
   if (rows.length === 0) return <p className="text-ink-muted">No open reports.</p>;
-  const db = (await createClient())!;
+  const db = await createClient();
+  if (!db) return null;
   // Group reports about the same thing.
   const groups = new Map<string, { type: string; id: string; reports: any[] }>();
   for (const r of rows) {

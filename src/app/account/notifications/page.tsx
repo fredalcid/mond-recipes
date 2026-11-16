@@ -6,8 +6,10 @@ import { PrefsForm } from "./PrefsForm";
 export const metadata: Metadata = { title: "Notification settings", robots: { index: false } };
 
 export default async function NotificationSettings() {
-  const member = (await getCurrentMember())!;
-  const db = (await createClient())!;
+  const member = await getCurrentMember();
+  if (!member) return null; // the layout shows sign-in or "not connected"
+  const db = await createClient();
+  if (!db) return null;
   const { data } = await db.from("profiles").select("notification_prefs").eq("id", member.id).single();
   return (
     <div>
