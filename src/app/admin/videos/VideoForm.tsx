@@ -37,6 +37,8 @@ export async function VideoForm({ video }: { video?: Video }) {
         <Checkbox name="is_featured" label="Feature on the Videos page" defaultChecked={v?.is_featured} />
         <TextInput name="seo_title" label="Search title (optional)" defaultValue={v?.seo_title} maxLength={70} />
         <TextArea name="meta_description" label="Search description (optional)" defaultValue={v?.meta_description} rows={2} maxLength={300} />
+        <TextInput name="canonical_url" label="Canonical address (optional)" defaultValue={v?.canonical_url} hint="Only if this was first published at another address." />
+        <Checkbox name="noindex" label="Hide from search engines" defaultChecked={v?.noindex} />
       </Panel>
     </AdminForm>
   );

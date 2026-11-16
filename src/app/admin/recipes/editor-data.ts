@@ -42,6 +42,7 @@ export async function loadRecipeForEditing(id: string) {
   const src = r.recipe_sources?.[0];
   return {
     hero_image_path: r.hero_image_path as string | null,
+    og_image_path: r.og_image_path as string | null,
     value: {
       id: r.id,
       kind: r.kind,
@@ -64,6 +65,9 @@ export async function loadRecipeForEditing(id: string) {
       remove_image: false,
       seo_title: r.seo_title ?? "",
       meta_description: r.meta_description ?? "",
+      canonical_url: r.canonical_url ?? "",
+      noindex: Boolean(r.noindex),
+      remove_og_image: false,
       countries: slugs(r.recipe_countries, "countries"),
       regions: slugs(r.recipe_regions, "regions"),
       cuisines: (r.recipe_cuisines ?? []).map((x: any) => x.cuisines?.name).filter(Boolean),

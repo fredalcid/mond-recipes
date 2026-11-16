@@ -17,6 +17,7 @@ import { VideoCard } from "@/components/content/VideoCard";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { AdSlot } from "@/components/ads/AdSlot";
 import { latestPublicPhotos } from "@/lib/community/server";
+import { getSiteSettings } from "@/lib/settings";
 import type { Post } from "@/lib/community/types";
 
 export const revalidate = 300;
@@ -62,22 +63,24 @@ async function loadHome() {
 }
 
 export default async function HomePage() {
-  const home = await loadHome();
+  const [home, settings] = await Promise.all([loadHome(), getSiteSettings()]);
+  // Sections can be switched off in Admin → Settings.
+  const on = settings.sections;
   return (
     <>
       <Hero />
-      <CountriesSection countries={home.countries} sample={home.sample} />
-      <PopularSection recipes={home.popular} newest={home.popularIsNewest} />
-      <TrendingSection recipes={home.trending} />
+      {on.countries && <CountriesSection countries={home.countries} sample={home.sample} />}
+      {on.popular && <PopularSection recipes={home.popular} newest={home.popularIsNewest} />}
+      {on.trending && <TrendingSection recipes={home.trending} />}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <AdSlot id="home_mid" />
       </div>
-      <DrinksSection recipes={home.drinks} />
-      <CategoriesSection />
-      <CommunitySection photos={home.photos} />
-      <ArticlesSection articles={home.articles} videos={home.videos} />
-      <ShopSection products={home.products} />
-      <NewsletterSection />
+      {on.drinks && <DrinksSection recipes={home.drinks} />}
+      {on.categories && <CategoriesSection />}
+      {on.community && <CommunitySection photos={home.photos} />}
+      {on.articles && <ArticlesSection articles={home.articles} videos={home.videos} />}
+      {on.shop && <ShopSection products={home.products} />}
+      {on.newsletter && <NewsletterSection intro={settings.newsletterIntro} />}
     </>
   );
 }
@@ -340,7 +343,7 @@ function ShopSection({ products }: { products: Product[] }) {
   );
 }
 
-function NewsletterSection() {
+function NewsletterSection({ intro }: { intro: string }) {
   return (
     <section aria-labelledby="newsletter-title" className="pt-16">
       <Container>
@@ -350,7 +353,7 @@ function NewsletterSection() {
             <h2 id="newsletter-title" className="mt-4 text-3xl font-semibold text-forest-900 sm:text-4xl">
               A taste of the world in your inbox
             </h2>
-            <p className="mt-3 text-ink-muted">New recipes, country guides and cooking tips. No spam, and you can unsubscribe at any time.</p>
+            <p className="mt-3 text-ink-muted">{intro}</p>
           </div>
           <NewsletterForm source="homepage" />
         </div>

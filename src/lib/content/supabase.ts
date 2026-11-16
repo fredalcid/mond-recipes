@@ -87,7 +87,7 @@ export const supabaseContent: ContentSource = {
   async getArticle(slug) {
     const { data, error } = await db()
       .from("articles")
-      .select(`${ARTICLE_LIST}, updated_at, seo_title, meta_description, article_recipes ( recipe_id )`)
+      .select(`${ARTICLE_LIST}, updated_at, seo_title, meta_description, canonical_url, noindex, article_recipes ( recipe_id )`)
       .eq("slug", slug)
       .eq("status", "published")
       .maybeSingle();
@@ -99,6 +99,8 @@ export const supabaseContent: ContentSource = {
       body: a.body,
       updatedAt: a.updated_at,
       seoTitle: a.seo_title,
+      canonicalUrl: a.canonical_url,
+      noindex: Boolean(a.noindex),
       metaDescription: a.meta_description,
       recipes: await recipesByIds((a.article_recipes ?? []).map((x: any) => x.recipe_id)),
     };
@@ -131,6 +133,8 @@ export const supabaseContent: ContentSource = {
       ...mapVideo(v),
       seoTitle: v.seo_title,
       metaDescription: v.meta_description,
+      canonicalUrl: v.canonical_url,
+      noindex: Boolean(v.noindex),
       recipes: await recipesByIds((v.video_recipes ?? []).map((x: any) => x.recipe_id)),
     };
   },
@@ -204,8 +208,8 @@ export const supabaseContent: ContentSource = {
 
   async listIndexable() {
     const [a, v] = await Promise.all([
-      db().from("articles").select("slug, updated_at").eq("status", "published").eq("is_sample", false),
-      db().from("videos").select("slug, updated_at").eq("status", "published"),
+      db().from("articles").select("slug, updated_at").eq("status", "published").eq("is_sample", false).eq("noindex", false),
+      db().from("videos").select("slug, updated_at").eq("status", "published").eq("noindex", false),
     ]);
     return [
       ...((a.data ?? []) as any[]).map((x) => ({ path: `/articles/${x.slug}`, updatedAt: x.updated_at })),

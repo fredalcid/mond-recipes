@@ -92,8 +92,9 @@ npm run test:db    # security tests; needs DATABASE_URL pointing at an EMPTY tes
    4. `supabase/migrations/20261116000400_recipe_admin.sql`
    5. `supabase/migrations/20261116000500_editorial_shop.sql`
    6. `supabase/migrations/20261116000600_community.sql`
-   7. `supabase/seed.sql`
-   8. *(Optional, for a staging site only)* `supabase/sample_content.sql`: the 13 sample recipes. Remove them before launch with `delete from public.recipes where is_sample;`
+   7. `supabase/migrations/20261116000700_administration.sql`
+   8. `supabase/seed.sql`
+   9. *(Optional, for a staging site only)* `supabase/sample_content.sql`: the 13 sample recipes. Remove them before launch with `delete from public.recipes where is_sample;`
 
    (Or with the Supabase CLI: `supabase link` then `supabase db push`, then run `seed.sql`.)
 3. **Authentication → Sign In / Providers → Email:** keep **Confirm email** turned on.
@@ -163,7 +164,7 @@ curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" https://www.mondrecipes.com/
 
 - `npm test`: unit tests
 - `npm run test:db`: database security and logic checks (needs an empty PostgreSQL 16 database in `DATABASE_URL`)
-- `npm run test:api`: runs the site's community queries through PostgREST, the API Supabase uses (needs PostgREST 12 as `POSTGREST`)
+- `npm run test:api`: runs the site's community and admin queries through PostgREST, the API Supabase uses (needs PostgREST 12 as `POSTGREST`)
 
 ## Pages
 
@@ -189,7 +190,8 @@ curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" https://www.mondrecipes.com/
 | `/account/…` | Overview, profile, my contributions, saved recipes, notification settings, blocked members, delete account |
 | `/notifications` | Follows, likes, comments, replies, reviews, review decisions, activity from people you follow |
 | `/community-guidelines` | Community rules (draft) |
-| `/admin` … | Staff only: dashboard, recipes, articles, videos, shop (with click report and link checks), moderation queue and reports, members (suspend, restore, feature), challenges, advertising and newsletter (super admins) |
+| `/admin` … | Staff only. See "The admin area" below |
+| `/ads.txt` | Advertising partners file, edited in Admin → Advertising |
 
 When Supabase isn't connected, the site runs on the labelled **sample library** (`src/lib/demo/library.ts`), so every page can be reviewed. Once Supabase is connected, the site reads only from the database.
 
@@ -244,6 +246,29 @@ Photo areas show placeholders until properly licensed food photography is upload
 - Newsletter double opt-in: confirmation email, 7-day link, one-click unsubscribe, hashed tokens, rate limits, CSV export of confirmed subscribers
 - Contact form (with topic, spam honeypot and rate limit), About, Advertise and Affiliate Disclosure pages
 
+## The admin area
+
+| Section | Who | What it does |
+|---|---|---|
+| Dashboard | All staff | Real counts: recipes (total, published, waiting, drafts, drinks), members (registered, active in 30 days, new, suspended), community posts, moderation queue, reviews, articles, videos, products, shop clicks, newsletter subscribers, ad placements. Warnings for moderation, broken shop links, sample recipes and blocked search engines |
+| Analytics | All staff | Day-by-day charts (new members, recipes published, saves, reviews, comments, posts, shop clicks, newsletter confirmations) for 7, 30, 90 or 365 days; most saved and best rated recipes, most clicked products, countries with the most recipes. Visitor numbers come from Google Analytics |
+| Recipes, Drinks & Tea | Editors | Create, edit, delete, publish or unpublish, verification badge, search title and description, canonical address, hide from search engines, social sharing image |
+| Countries | Editors | Introduction, food culture, photo, flag (upload replaces the built-in one), featured on the homepage, open to search engines, editors' picks (up to 12 recipes), linked cuisines, regions, other names, SEO fields |
+| Categories & ingredients | Editors | Recipe categories, cuisines, drink & tea categories, diets, allergens, article topics, shop categories, ingredients (grams per cup, other names, merge duplicates) |
+| Articles, Videos, Shop | Editors | As in Phase 3, plus canonical address and hide-from-search for articles and videos |
+| Moderation | Moderators, editors | Member recipes (full recipe shown), posts, reports |
+| Reviews | Moderators, editors | All ratings and reviews, filter reported, hidden or removed; remove or restore |
+| Challenges | Moderators, editors | Create and schedule challenges |
+| Members | Moderators, super admins | Search, suspend and restore, feature; member page with blocks (remove a block), reports, activity. Super admins also see the account email and last sign-in, and set team roles |
+| SEO | Editors (checks), super admins (settings) | Allow search engines (off until launch), homepage title, default description, default sharing image; lists of pages missing descriptions or photos, thin indexed countries and hidden recipes |
+| Settings | Super admins | Name, tagline, description, logo, public contact email, mailing address, social media links, footer note, homepage sections on/off, newsletter sign-up text |
+| Advertising, Newsletter | Super admins | As in Phase 3, plus ads.txt, newsletter search, unsubscribe or delete a subscriber |
+| Audit log | Super admins | Every team action, with who, when and what changed. Entries can't be edited or deleted |
+
+**Search engines are blocked until you allow them** in Admin → SEO. Until then, robots.txt disallows everything and every page says "noindex". Turn it on at launch.
+
+The database enforces every permission on its own, so a hidden menu link is never the only protection. The site always keeps at least one super admin.
+
 ## What works in Phase 4
 
 - **Profiles**: username, picture, bio, country, followers and following, optional public favourites
@@ -263,7 +288,6 @@ Photo areas show placeholders until properly licensed food photography is upload
 - Email sending, AdSense, Analytics and the link checker were built against the services' documented APIs but not tested with live accounts. They stay off until their keys are set.
 - Shop sample products have no links and are labelled “Sample”; the Shop needs real products from affiliate programs you have joined.
 - Nutrition information isn't stored yet; recipe pages say so.
-- The admin covers recipes only. Countries, regions, cuisines and ingredient densities are edited in Supabase until the full admin (Phase 5).
 - The admin and saving were tested through the database functions and form validation, but not yet against a live Supabase project.
 - Community features were tested against the real database API (PostgREST) with a stand-in for Supabase's sign-in service. Real sign-in, file uploads to Storage, Turnstile and account deletion (which needs the service key) were not tested with a live Supabase project.
 - Notifications appear on the site only; they are not emailed.

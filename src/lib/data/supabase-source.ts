@@ -88,7 +88,7 @@ async function rpcSearch(p: SearchParams, limit = PAGE_SIZE) {
 const RECIPE_SELECT = `
   id, slug, title, summary, kind, prep_minutes, cook_minutes, total_minutes, servings, serving_unit, difficulty,
   tips, substitutions, hero_image_path, alcohol_percent, rating_average, rating_count, save_count, verification,
-  is_sample, published_at, updated_at, seo_title, meta_description,
+  is_sample, published_at, updated_at, seo_title, meta_description, canonical_url, noindex, og_image_path,
   recipe_ingredients ( position, quantity, unit, note, group_label, ingredients ( name, grams_per_cup ) ),
   recipe_steps ( position, body, timer_seconds ),
   recipe_countries ( countries ( name, slug, iso2 ) ),
@@ -161,6 +161,9 @@ function mapDetail(r: any): RecipeDetail {
     updatedAt: r.updated_at,
     seoTitle: r.seo_title,
     metaDescription: r.meta_description,
+    canonicalUrl: r.canonical_url,
+    noindex: Boolean(r.noindex),
+    ogImageUrl: publicImageUrl(r.og_image_path),
   };
 }
 
@@ -224,7 +227,7 @@ export const supabaseSource: DataSource = {
   async listCountries() {
     const { data, error } = await db()
       .from("countries")
-      .select("slug, name, iso2, intro, is_featured, hero_image_path, recipe_countries ( count )")
+      .select("slug, name, iso2, intro, is_featured, hero_image_path, flag_path, recipe_countries ( count )")
       .order("name");
     fail(error, "listCountries");
     return ((data ?? []) as any[]).map((c) => ({
@@ -235,13 +238,19 @@ export const supabaseSource: DataSource = {
       isFeatured: c.is_featured,
       recipeCount: c.recipe_countries?.[0]?.count ?? 0,
       imageUrl: publicImageUrl(c.hero_image_path),
+      flagUrl: publicImageUrl(c.flag_path),
     }));
   },
 
   async getCountry(slug): Promise<CountryDetail | null> {
     const { data: c, error } = await db()
       .from("countries")
-      .select("slug, name, iso2, intro, food_culture, is_featured, is_indexable, hero_image_path, seo_title, meta_description, regions ( slug, name, description, display_order ), country_aliases ( alias )")
+      .select(
+        `id, slug, name, iso2, intro, food_culture, is_featured, is_indexable, hero_image_path, flag_path, og_image_path, canonical_url, seo_title, meta_description,
+         regions ( slug, name, description, display_order ), country_aliases ( alias ), country_cuisines ( cuisines ( name ) ),
+         country_featured_recipes ( position, recipes ( id, slug, title, summary, kind, prep_minutes, cook_minutes, total_minutes, difficulty, hero_image_path,
+           rating_average, rating_count, save_count, verification, is_sample, status, recipe_countries ( countries ( name, iso2 ) ) ) )`,
+      )
       .eq("slug", slug)
       .maybeSingle();
     fail(error, "getCountry");
@@ -265,9 +274,19 @@ export const supabaseSource: DataSource = {
       aliases: (row.country_aliases ?? []).map((a: any) => a.alias),
       dishes: dishes.items,
       drinks: drinks.items,
-      cuisines: [...new Set([...dishes.items, ...drinks.items].flatMap((r) => r.cuisines))],
+      cuisines: [...new Set([...(row.country_cuisines ?? []).map((x: any) => x.cuisines?.name).filter(Boolean), ...[...dishes.items, ...drinks.items].flatMap((r) => r.cuisines)])],
+      featured: [...(row.country_featured_recipes ?? [])]
+        .filter((f: any) => f.recipes?.status === "published")
+        .sort((a: any, b: any) => a.position - b.position)
+        .map((f: any) => {
+          const cs = (f.recipes.recipe_countries ?? []).map((x: any) => x.countries).filter(Boolean);
+          return mapSearchRow({ ...f.recipes, cuisines: [], countries: cs.map((x: any) => x.name), country_codes: cs.map((x: any) => x.iso2) });
+        }),
+      flagUrl: publicImageUrl(row.flag_path),
       seoTitle: row.seo_title,
       metaDescription: row.meta_description,
+      canonicalUrl: row.canonical_url,
+      ogImageUrl: publicImageUrl(row.og_image_path),
     };
   },
 
@@ -330,6 +349,7 @@ export const supabaseSource: DataSource = {
       .select("slug, kind, updated_at")
       .eq("status", "published")
       .eq("is_sample", false)
+      .eq("noindex", false)
       .limit(45000);
     fail(error, "listIndexableRecipes");
     return ((data ?? []) as any[]).map((r) => ({ slug: r.slug, kind: r.kind, updatedAt: r.updated_at }));

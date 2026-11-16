@@ -6,7 +6,7 @@ import { AuthNav } from "./AuthNav";
 import { MobileMenu } from "./MobileMenu";
 import { NavLinks } from "./NavLinks";
 
-export function Header() {
+export function Header({ name, logoUrl }: { name?: string; logoUrl?: string | null }) {
   return (
     <header className="sticky top-0 z-40 border-b border-sand-strong/70 bg-ivory">
       <a
@@ -16,7 +16,7 @@ export function Header() {
         Skip to content
       </a>
       <Container className="flex h-[72px] items-center justify-between gap-4">
-        <Logo size={46} />
+        <Logo size={46} name={name} logoUrl={logoUrl} />
         <NavLinks items={primaryNav} />
         <div className="flex items-center gap-1 sm:gap-2">
           <Link
@@ -29,7 +29,7 @@ export function Header() {
               <path d="M20 20l-3.5-3.5" />
             </svg>
           </Link>
-          <div className="hidden lg:block">
+          <div className="hidden xl:block">
             <AuthNav />
           </div>
           <MobileMenu />

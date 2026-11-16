@@ -1,3 +1,6 @@
+import { notFound } from "next/navigation";
+import { getCurrentMember } from "@/lib/auth";
+import { canEditContent } from "@/lib/admin";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { LinkButton } from "@/components/ui/Button";
@@ -11,6 +14,7 @@ const STATUSES = ["draft", "pending", "published", "unpublished", "rejected"] as
 type Props = { searchParams: Promise<{ status?: string; q?: string; kind?: string }> };
 
 export default async function AdminRecipes({ searchParams }: Props) {
+  if (!canEditContent(await getCurrentMember())) notFound();
   const { status, q, kind } = await searchParams;
   const supabase = (await createClient())!;
   let query = supabase

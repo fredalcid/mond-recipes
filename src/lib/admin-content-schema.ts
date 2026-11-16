@@ -11,6 +11,14 @@ const bool = z
   .transform((v) => v === "on" || v === "true");
 const status = z.enum(["draft", "pending", "published", "unpublished"]);
 const uuidList = z.array(z.string().uuid()).max(30);
+const canonical = z
+  .string()
+  .trim()
+  .max(500)
+  .optional()
+  .default("")
+  .refine((v) => v === "" || /^https:\/\/\S+$/.test(v), "Use a full https:// address, or leave it empty.")
+  .transform((v) => v || null);
 
 export const articleSchema = z.object({
   id: z.string().uuid().or(z.literal("")).optional(),
@@ -24,6 +32,8 @@ export const articleSchema = z.object({
   is_featured: bool,
   seo_title: opt(70),
   meta_description: opt(300),
+  canonical_url: canonical,
+  noindex: bool,
   categories: z.array(z.string().regex(SLUG)).max(9),
   recipes: uuidList,
   remove_image: bool,
@@ -59,6 +69,8 @@ export const videoSchema = z.object({
   is_featured: bool,
   seo_title: opt(70),
   meta_description: opt(300),
+  canonical_url: canonical,
+  noindex: bool,
   recipes: uuidList,
 });
 

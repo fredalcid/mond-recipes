@@ -40,11 +40,26 @@ export async function saveRecipeAction(_prev: EditorState, formData: FormData): 
     payload.hero_image_path = path;
   }
 
+  // Optional social sharing image (defaults to the main photo).
+  let ogPath: string | null | undefined = parsed.data.remove_og_image ? null : undefined;
+  const og = formData.get("og_image");
+  if (og instanceof File && og.size > 0) {
+    const problem = validateImage(og);
+    if (problem) return { status: "error", errors: { og_image: problem } };
+    ogPath = `social/${payload.slug}-${randomUUID().slice(0, 8)}.${EXT[og.type]}`;
+    const { error } = await supabase.storage.from("recipe-images").upload(ogPath, og, { contentType: og.type, upsert: false });
+    if (error) return { status: "error", errors: { og_image: `Upload failed: ${error.message}` } };
+  }
+
   const { data: id, error } = await supabase.rpc("admin_save_recipe", { p: payload });
   if (error) {
     if (/duplicate key.*slug/i.test(error.message)) return { status: "error", errors: { slug: "Another recipe already uses this web address." } };
     return { status: "error", message: error.message };
   }
+  const seo: Record<string, unknown> = { canonical_url: parsed.data.canonical_url || null, noindex: parsed.data.noindex };
+  if (ogPath !== undefined) seo.og_image_path = ogPath;
+  const { error: seoError } = await supabase.from("recipes").update(seo).eq("id", id);
+  if (seoError) return { status: "error", message: `The recipe was saved, but the search settings weren't: ${seoError.message}` };
 
   revalidatePath("/", "layout");
   redirect(`/admin/recipes/${id}?saved=1`);

@@ -215,6 +215,7 @@ export const demoSource: DataSource = {
       dishes: mine.filter((r) => r.kind === "food").map(summary),
       drinks: mine.filter((r) => r.kind === "drink").map(summary),
       cuisines: [...new Set(mine.flatMap((r) => r.cuisines.map((x) => cuisineBySlug.get(x)!.name)))],
+      featured: [],
       seoTitle: null,
       metaDescription: null,
     };

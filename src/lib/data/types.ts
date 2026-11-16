@@ -53,6 +53,9 @@ export type RecipeDetail = RecipeSummary & {
   updatedAt: string | null;
   seoTitle: string | null;
   metaDescription: string | null;
+  canonicalUrl?: string | null;
+  noindex?: boolean;
+  ogImageUrl?: string | null;
 };
 
 export type SearchParams = {
@@ -91,6 +94,8 @@ export type CountrySummary = {
   isFeatured: boolean;
   recipeCount: number;
   imageUrl: string | null;
+  /** Uploaded flag image; when empty the built-in flag for the ISO code is shown. */
+  flagUrl?: string | null;
 };
 
 export type Region = { slug: string; name: string; description: string | null };
@@ -103,8 +108,12 @@ export type CountryDetail = CountrySummary & {
   dishes: RecipeSummary[];
   drinks: RecipeSummary[];
   cuisines: string[];
+  /** Recipes chosen by editors, shown first. */
+  featured: RecipeSummary[];
   seoTitle: string | null;
   metaDescription: string | null;
+  canonicalUrl?: string | null;
+  ogImageUrl?: string | null;
 };
 
 export type RegionDetail = Region & { country: { slug: string; name: string; iso2: string }; recipes: RecipeSummary[] };

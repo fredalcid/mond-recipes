@@ -128,10 +128,11 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a
 select pg_temp.expect((select count(*) = 1 from public.newsletter_subscribers), 'super admin sees subscribers');
 insert into public.user_roles (user_id, role) values ('00000000-0000-0000-0000-00000000000c', 'moderator');
 select pg_temp.expect(true, 'super admin grants a role');
-select pg_temp.expect((select count(*) = 1 from public.admin_activity_log), 'super admin reads the audit log');
+select pg_temp.expect((select count(*) >= 1 from public.admin_activity_log where entity_type = 'user_roles'), 'super admin reads the audit log, including the role grant just made');
+create temp table audit_before as select id, action from public.admin_activity_log;
 update public.admin_activity_log set action = 'edited';
 delete from public.admin_activity_log;
-select pg_temp.expect((select count(*) = 1 and bool_and(action = 'publish') from public.admin_activity_log), 'audit log entries cannot be edited or deleted');
+select pg_temp.expect((select count(*) = (select count(*) from audit_before) and bool_and(action <> 'edited') from public.admin_activity_log), 'audit log entries cannot be edited or deleted');
 
 reset role;
 \echo 'All security tests passed.'

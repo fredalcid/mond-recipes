@@ -1,3 +1,6 @@
+import { notFound } from "next/navigation";
+import { getCurrentMember } from "@/lib/auth";
+import { canEditContent } from "@/lib/admin";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { AdminHeader, Table } from "@/components/admin/AdminBits";
@@ -10,6 +13,7 @@ type Props = { searchParams: Promise<{ days?: string }> };
 const PERIODS = [7, 30, 90, 365];
 
 export default async function AdminShop({ searchParams }: Props) {
+  if (!canEditContent(await getCurrentMember())) notFound();
   const { days: d } = await searchParams;
   const days = PERIODS.includes(Number(d)) ? Number(d) : 30;
   const client = await db();

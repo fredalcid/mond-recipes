@@ -25,7 +25,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: v.seoTitle ?? v.title,
     description: v.metaDescription ?? v.description?.slice(0, 160) ?? undefined,
-    alternates: { canonical: `/videos/${v.slug}` },
+    alternates: { canonical: v.canonicalUrl ?? `/videos/${v.slug}` },
+    robots: v.noindex ? { index: false, follow: true } : undefined,
     openGraph: { type: "video.other", title: v.title, images: [v.thumbnailUrl] },
   };
 }

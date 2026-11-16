@@ -1,3 +1,6 @@
+import { notFound } from "next/navigation";
+import { getCurrentMember } from "@/lib/auth";
+import { canEditContent } from "@/lib/admin";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { AdminHeader, StatusBadge, Table } from "@/components/admin/AdminBits";
@@ -7,6 +10,7 @@ import { db } from "../content-data";
 export const metadata = { title: "Videos" };
 
 export default async function AdminVideos() {
+  if (!canEditContent(await getCurrentMember())) notFound();
   const { data, error } = await (await db()).from("videos").select("id, title, status, collection, updated_at").order("updated_at", { ascending: false }).limit(300);
   return (
     <Container className="py-10">

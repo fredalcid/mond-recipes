@@ -38,6 +38,8 @@ export async function ArticleForm({ article }: { article?: Article }) {
         <Checkbox name="is_featured" label="Feature on the Articles page" defaultChecked={a?.is_featured} />
         <TextInput name="seo_title" label="Search title (optional)" defaultValue={a?.seo_title} maxLength={70} />
         <TextArea name="meta_description" label="Search description (optional)" defaultValue={a?.meta_description} rows={2} maxLength={300} />
+        <TextInput name="canonical_url" label="Canonical address (optional)" defaultValue={a?.canonical_url} hint="Only if this was first published at another address." />
+        <Checkbox name="noindex" label="Hide from search engines" defaultChecked={a?.noindex} />
         {a?.is_sample && <p className="text-sm text-ink-muted">This is sample content and is labelled “Sample” on the site.</p>}
       </Panel>
     </AdminForm>

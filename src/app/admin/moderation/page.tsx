@@ -5,7 +5,7 @@ import { FormMessage } from "@/components/ui/Field";
 import { AdminHeader } from "@/components/admin/AdminBits";
 import { PostMediaView } from "@/components/community/PostCard";
 import { getCurrentMember } from "@/lib/auth";
-import { canModerate } from "@/lib/admin";
+import { canEditContent, canModerate } from "@/lib/admin";
 import { createClient } from "@/lib/supabase/server";
 import { MEMBER_SELECT, POST_SELECT, mapMember, mapPost } from "@/lib/community/server";
 import { REPORT_REASONS, timeAgo, type MemberSummary } from "@/lib/community/types";
@@ -46,7 +46,11 @@ export default async function ModerationPage({ searchParams }: Props) {
   const [recipes, posts, reports] = await Promise.all([
     db
       .from("recipes")
-      .select(`id, title, kind, summary, updated_at, author:profiles ( ${MEMBER_SELECT} )`)
+      .select(
+        `id, title, kind, summary, prep_minutes, cook_minutes, servings, tips, updated_at, author:profiles ( ${MEMBER_SELECT} ),
+         recipe_ingredients ( position, quantity, unit, note, ingredients ( name ) ), recipe_steps ( position, body ),
+         recipe_countries ( countries ( name ) ), recipe_sources ( source_type, description, url )`,
+      )
       .eq("status", "pending")
       .not("author_id", "is", null)
       .order("updated_at")
@@ -76,7 +80,7 @@ export default async function ModerationPage({ searchParams }: Props) {
         {sp.error && <FormMessage tone="error">{ERRORS[sp.error] ?? ERRORS.failed}</FormMessage>}
       </div>
 
-      {tab === "recipes" && <RecipeQueue rows={(recipes.data ?? []) as any[]} />}
+      {tab === "recipes" && <RecipeQueue rows={(recipes.data ?? []) as any[]} canEdit={canEditContent(member)} />}
       {tab === "posts" && <PostQueue rows={(posts.data ?? []) as any[]} />}
       {tab === "reports" && <ReportQueue rows={(reports.data ?? []) as any[]} />}
     </Container>
@@ -120,7 +124,9 @@ function Who({ member, when }: { member: MemberSummary; when: string }) {
   );
 }
 
-function RecipeQueue({ rows }: { rows: any[] }) {
+const SOURCE: Record<string, string> = { original: "Original recipe", family: "Family recipe", adapted: "Adapted from another recipe" };
+
+function RecipeQueue({ rows, canEdit }: { rows: any[]; canEdit: boolean }) {
   if (rows.length === 0) return <p className="text-ink-muted">No member recipes are waiting for review.</p>;
   return (
     <ul className="flex flex-col gap-4">
@@ -131,12 +137,57 @@ function RecipeQueue({ rows }: { rows: any[] }) {
               <h2 className="text-xl font-semibold text-forest-900">{r.title}</h2>
               <Who member={mapMember(r.author)} when={r.updated_at} />
             </div>
-            <Link href={`/admin/recipes/${r.id}`} className="inline-flex min-h-11 items-center rounded-full border border-forest-900 px-4 text-sm font-semibold text-forest-900">
-              Open in the editor
-            </Link>
+            {canEdit && (
+              <Link href={`/admin/recipes/${r.id}`} className="inline-flex min-h-11 items-center rounded-full border border-forest-900 px-4 text-sm font-semibold text-forest-900">
+                Open in the editor
+              </Link>
+            )}
           </div>
           {r.summary && <p className="text-ink-muted">{r.summary}</p>}
-          <p className="text-sm text-ink-muted">Check the recipe is original or credited, complete and safe. You can fix small things in the editor before approving.</p>
+          <details className="rounded-xl bg-ivory p-4">
+            <summary className="cursor-pointer font-semibold text-forest-900">Read the full recipe</summary>
+            <div className="mt-3 grid gap-6 text-sm md:grid-cols-[1fr_2fr]">
+              <div>
+                <p className="text-ink-muted">
+                  {(r.recipe_countries ?? []).map((c: any) => c.countries?.name).filter(Boolean).join(", ") || "No country"}
+                  {r.servings ? ` · serves ${r.servings}` : ""}
+                  {r.prep_minutes || r.cook_minutes ? ` · ${(r.prep_minutes ?? 0) + (r.cook_minutes ?? 0)} min` : ""}
+                </p>
+                <h3 className="mt-3 font-semibold">Ingredients</h3>
+                <ul className="mt-1 list-disc pl-5">
+                  {[...(r.recipe_ingredients ?? [])]
+                    .sort((a: any, b: any) => a.position - b.position)
+                    .map((i: any) => (
+                      <li key={i.position}>
+                        {[i.quantity == null ? "" : Number(i.quantity), i.unit, i.ingredients?.name].filter(Boolean).join(" ")}
+                        {i.note ? `, ${i.note}` : ""}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold">Method</h3>
+                <ol className="mt-1 list-decimal space-y-1 pl-5">
+                  {[...(r.recipe_steps ?? [])]
+                    .sort((a: any, b: any) => a.position - b.position)
+                    .map((st: any) => (
+                      <li key={st.position}>{st.body}</li>
+                    ))}
+                </ol>
+                {r.tips && <p className="mt-3"><strong>Tips:</strong> {r.tips}</p>}
+                {(r.recipe_sources ?? [])[0] && (
+                  <p className="mt-3">
+                    <strong>Source:</strong> {SOURCE[r.recipe_sources[0].source_type] ?? r.recipe_sources[0].source_type}
+                    {r.recipe_sources[0].description ? ` · ${r.recipe_sources[0].description}` : ""}
+                    {r.recipe_sources[0].url ? ` · ${r.recipe_sources[0].url}` : ""}
+                  </p>
+                )}
+              </div>
+            </div>
+          </details>
+          <p className="text-sm text-ink-muted">
+            Check the recipe is original or credited, complete and safe.{canEdit ? " You can fix small things in the editor before approving." : " If it needs small fixes, ask for changes with a note."}
+          </p>
           <Decision
             type="recipe"
             id={r.id}

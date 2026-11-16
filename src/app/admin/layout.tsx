@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { FormMessage } from "@/components/ui/Field";
 import { getCurrentMember } from "@/lib/auth";
-import { isStaff } from "@/lib/admin";
+import { Suspense } from "react";
+import { canEditContent, canManageMembers, canModerate, isStaff } from "@/lib/admin";
+import { AdminNav, type NavGroup } from "@/components/admin/AdminNav";
+
+const ROLE_LABEL = { super_admin: "Super admin", editor: "Editor", moderator: "Community moderator" } as const;
 import { isSupabaseConfigured } from "@/lib/env";
 
 export const metadata: Metadata = { title: { default: "Admin", template: "%s · Admin · Mònd Recipes" }, robots: { index: false, follow: false } };
@@ -26,39 +29,72 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Non-staff get a plain 404 so the admin area isn't advertised.
   if (!isStaff(member)) notFound();
 
-  return (
-    <div className="border-t border-sand-strong bg-white">
-      <Container className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-sand py-3 text-sm">
-        <span className="font-semibold text-forest-900">Admin</span>
-        <nav aria-label="Admin">
-          <ul className="flex flex-wrap gap-1">
-            {[
-              ["/admin", "Dashboard"],
+  const editor = canEditContent(member);
+  const moderator = canModerate(member);
+  const superAdmin = member.roles.includes("super_admin");
+  const groups: NavGroup[] = [
+    { title: "Overview", links: [["/admin", "Dashboard"], ["/admin/analytics", "Analytics"]] },
+    ...(editor
+      ? [
+          {
+            title: "Content",
+            links: [
               ["/admin/recipes", "Recipes"],
+              ["/admin/recipes?kind=drink", "Drinks & Tea"],
+              ["/admin/countries", "Countries"],
+              ["/admin/taxonomy", "Categories & ingredients"],
               ["/admin/articles", "Articles"],
               ["/admin/videos", "Videos"],
               ["/admin/shop", "Shop"],
+            ] as [string, string][],
+          },
+        ]
+      : []),
+    ...(moderator
+      ? [
+          {
+            title: "Community",
+            links: [
               ["/admin/moderation", "Moderation"],
+              ["/admin/reviews", "Reviews"],
               ["/admin/challenges", "Challenges"],
-              ...(member.roles.some((r) => r === "super_admin" || r === "moderator") ? [["/admin/members", "Members"]] : []),
-              ...(member.roles.includes("super_admin")
-                ? [
+              ...(canManageMembers(member) ? ([["/admin/members", "Members"]] as [string, string][]) : []),
+            ] as [string, string][],
+          },
+        ]
+      : []),
+    ...(editor || superAdmin
+      ? [
+          {
+            title: "Website",
+            links: [
+              ["/admin/seo", "SEO"],
+              ...(superAdmin
+                ? ([
+                    ["/admin/settings", "Settings"],
                     ["/admin/ads", "Advertising"],
                     ["/admin/newsletter", "Newsletter"],
-                  ]
+                    ["/admin/audit", "Audit log"],
+                  ] as [string, string][])
                 : []),
-            ].map(([href, label]) => (
-              <li key={href}>
-                <Link href={href} className="inline-flex min-h-10 items-center rounded-full px-3 font-medium hover:bg-sand">
-                  {label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-        <span className="ml-auto text-ink-muted">
-          Signed in as {member.displayName} ({member.roles.join(", ").replace("_", " ")})
-        </span>
+            ] as [string, string][],
+          },
+        ]
+      : []),
+  ];
+
+  return (
+    <div className="border-t border-sand-strong bg-white">
+      <Container className="flex flex-col gap-3 border-b border-sand py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <span className="font-semibold text-forest-900">Admin</span>
+          <span className="text-ink-muted">
+            Signed in as {member.displayName} ({member.roles.map((r) => ROLE_LABEL[r]).join(", ")})
+          </span>
+        </div>
+        <Suspense>
+          <AdminNav groups={groups} />
+        </Suspense>
       </Container>
       <div className="bg-ivory">{children}</div>
     </div>

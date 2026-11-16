@@ -142,10 +142,12 @@ function AccountMenu({ user, layout }: { user: User; layout: "row" | "stack" }) 
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex min-h-11 items-center gap-2 rounded-full border border-sand-strong bg-white pr-3 pl-1 text-sm font-semibold hover:border-forest-900"
+        aria-label={`Account menu for ${name}`}
+        className="flex min-h-11 items-center gap-2 rounded-full border border-sand-strong bg-white p-1 text-sm font-semibold hover:border-forest-900 2xl:pr-3"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-forest-900 text-cream">{initial}</span>
-        <span className="max-w-32 truncate">{name}</span>
+        <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-forest-900 text-cream">{initial}</span>
+        {/* The name only fits beside the full menu on very wide screens. */}
+        <span aria-hidden="true" className="hidden max-w-32 truncate 2xl:inline">{name}</span>
       </button>
       {open && (
         <div role="menu" className="absolute top-full right-0 z-50 mt-2 w-56 rounded-xl border border-sand-strong bg-white p-2 shadow-card">

@@ -62,11 +62,13 @@ export function RecipeEditor({
   imageUrl,
   mode = "admin",
   saveAction = saveRecipeAction,
+  ogImageUrl = null,
 }: {
   initial: Value;
   options: EditorOptions;
   imageUrl: string | null;
   mode?: EditorMode;
+  ogImageUrl?: string | null;
   saveAction?: (prev: EditorState, fd: FormData) => Promise<EditorState>;
 }) {
   const member = mode === "member";
@@ -747,6 +749,43 @@ export function RecipeEditor({
                 value={v.meta_description ?? ""}
                 onChange={(e) => set("meta_description", e.target.value)}
               />
+            </div>
+            <div>
+              <label htmlFor={`${id}-canonical`} className={label}>
+                Canonical address (optional)
+              </label>
+              <input
+                id={`${id}-canonical`}
+                type="url"
+                className={input}
+                value={v.canonical_url ?? ""}
+                onChange={(e) => set("canonical_url", e.target.value)}
+                placeholder="https://…"
+              />
+              <p className="mt-1 text-xs text-ink-muted">Only if this recipe was first published at another address. Usually leave empty.</p>
+              {errorBox("canonical_url")}
+            </div>
+            <div className="flex flex-col gap-3">
+              <label className="flex items-start gap-3 text-sm">
+                <input type="checkbox" checked={Boolean(v.noindex)} onChange={(e) => set("noindex", e.target.checked)} className="mt-0.5 h-5 w-5 accent-forest-900" />
+                <span>
+                  <strong>Hide from search engines</strong>. The page stays visible on the site.
+                </span>
+              </label>
+              <div>
+                <label htmlFor={`${id}-og`} className={label}>
+                  Social sharing image (optional)
+                </label>
+                <input id={`${id}-og`} name="og_image" type="file" accept="image/jpeg,image/png,image/webp" className="text-sm" />
+                <p className="mt-1 text-xs text-ink-muted">1200 × 630 pixels works best. If empty, the main photo is used.</p>
+                {ogImageUrl && (
+                  <label className="mt-2 flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={Boolean(v.remove_og_image)} onChange={(e) => set("remove_og_image", e.target.checked)} className="h-5 w-5 accent-forest-900" />
+                    Remove the current sharing image
+                  </label>
+                )}
+                {errorBox("og_image")}
+              </div>
             </div>
           </div>
         </Section>

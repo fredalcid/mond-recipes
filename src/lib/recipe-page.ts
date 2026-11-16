@@ -16,14 +16,14 @@ export async function recipeMetadata(slug: string, kind: RecipeKind): Promise<Me
   return {
     title: r.seoTitle ?? r.title,
     description,
-    alternates: { canonical: recipeHref(r) },
-    // Sample recipes are never indexed.
-    robots: r.isSample ? { index: false, follow: true } : undefined,
+    alternates: { canonical: r.canonicalUrl ?? recipeHref(r) },
+    // Sample recipes, and recipes editors chose to hide, are never indexed.
+    robots: r.isSample || r.noindex ? { index: false, follow: true } : undefined,
     openGraph: {
       type: "article",
       title: r.title,
       description,
-      images: r.imageUrl ? [{ url: r.imageUrl, alt: r.title }] : undefined,
+      images: r.ogImageUrl ?? r.imageUrl ? [{ url: (r.ogImageUrl ?? r.imageUrl)!, alt: r.title }] : undefined,
     },
   };
 }

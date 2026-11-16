@@ -41,7 +41,7 @@ export default async function EditRecipePage({ params, searchParams }: Props) {
       </div>
 
       {editable ? (
-        <RecipeEditor initial={v} options={options} imageUrl={publicImageUrl(recipe.hero_image_path)} />
+        <RecipeEditor initial={v} options={options} imageUrl={publicImageUrl(recipe.hero_image_path)} ogImageUrl={publicImageUrl(recipe.og_image_path)} />
       ) : (
         <pre className="overflow-x-auto rounded-card bg-white p-6 text-sm">{JSON.stringify(v, null, 2)}</pre>
       )}

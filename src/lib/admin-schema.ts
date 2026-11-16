@@ -30,6 +30,15 @@ export const recipePayloadSchema = z
     remove_image: z.boolean().optional().default(false),
     seo_title: text(70),
     meta_description: text(300),
+    canonical_url: z
+      .string()
+      .trim()
+      .max(500)
+      .refine((v) => v === "" || /^https:\/\/\S+$/.test(v), "Use a full https:// address, or leave it empty.")
+      .optional()
+      .default(""),
+    noindex: z.boolean().optional().default(false),
+    remove_og_image: z.boolean().optional().default(false),
     countries: slugList.default([]),
     regions: slugList.default([]),
     cuisines: z.array(z.string().trim().min(2).max(60)).max(10).default([]),

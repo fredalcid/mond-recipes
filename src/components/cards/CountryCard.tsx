@@ -6,7 +6,11 @@ import type { CountrySummary } from "@/lib/data/types";
 
 type FlagComponent = (props: { title?: string; className?: string }) => React.JSX.Element;
 
-export function CountryFlag({ iso2, name, className = "h-5 w-7.5" }: { iso2: string; name: string; className?: string }) {
+export function CountryFlag({ iso2, name, className = "h-5 w-7.5", src }: { iso2: string; name: string; className?: string; src?: string | null }) {
+  if (src) {
+    // eslint-disable-next-line @next/next/no-img-element -- small flag uploaded by editors
+    return <img src={src} alt={`Flag of ${name}`} className={`${className} shrink-0 rounded-[3px] object-cover shadow-[0_0_0_1px_rgb(0_0_0/0.08)]`} />;
+  }
   const Flag = (Flags as unknown as Record<string, FlagComponent | undefined>)[iso2.toUpperCase()];
   if (!Flag) return null;
   return <Flag title={`Flag of ${name}`} className={`${className} shrink-0 rounded-[3px] shadow-[0_0_0_1px_rgb(0_0_0/0.08)]`} />;
@@ -25,7 +29,7 @@ export function CountryCard({ country, sample = false }: { country: CountrySumma
       </div>
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="flex items-center gap-3">
-          <CountryFlag iso2={country.iso2} name={country.name} />
+          <CountryFlag iso2={country.iso2} name={country.name} src={country.flagUrl} />
           <h3 className="text-xl font-semibold text-forest-900">
             <Link href={`/countries/${country.slug}`} className="after:absolute after:inset-0">
               {country.name}

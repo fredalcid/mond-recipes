@@ -6,6 +6,8 @@ import { Checkbox, Select, TextInput } from "@/components/admin/fields";
 import { FormMessage } from "@/components/ui/Field";
 import { getCurrentMember } from "@/lib/auth";
 import { savePlacement } from "../content-actions";
+import { saveAdsTxt } from "../settings/actions";
+import { TextArea } from "@/components/admin/fields";
 import { db } from "../content-data";
 
 export const metadata = { title: "Advertising" };
@@ -39,6 +41,7 @@ export default async function AdsAdmin() {
   if (!member?.roles.includes("super_admin")) notFound();
   const { data } = await (await db()).from("ad_placements").select("*").order("display_order");
   const rows = (data ?? []) as Placement[];
+  const { data: adsTxt } = await (await db()).from("site_settings").select("value").eq("key", "ads.txt").maybeSingle();
   const client = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
 
   return (
@@ -84,6 +87,15 @@ export default async function AdsAdmin() {
           </details>
         ))}
       </div>
+      <section className="mt-10 rounded-card border border-sand-strong bg-white p-5">
+        <h2 className="text-2xl font-semibold text-forest-900">ads.txt</h2>
+        <p className="mt-1 mb-4 text-sm text-ink-muted">
+          Served at /ads.txt. Paste the line Google AdSense gives you once your site is approved, e.g. <code>google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0</code>.
+        </p>
+        <AdminForm action={saveAdsTxt} submitLabel="Save ads.txt">
+          <TextArea name="ads_txt" label="Lines" defaultValue={typeof adsTxt?.value === "string" ? adsTxt.value : ""} rows={4} />
+        </AdminForm>
+      </section>
     </Container>
   );
 }

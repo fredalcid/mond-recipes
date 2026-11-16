@@ -30,9 +30,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: c.seoTitle ?? `${c.name} recipes and food culture`,
     description: c.metaDescription ?? c.intro ?? `Recipes, drinks and food culture from ${c.name}.`,
-    alternates: { canonical: `/countries/${c.slug}` },
+    alternates: { canonical: c.canonicalUrl ?? `/countries/${c.slug}` },
     // Only pages editors have marked as complete are indexed; thin pages are not.
     robots: c.isIndexable ? undefined : { index: false, follow: true },
+    openGraph: c.ogImageUrl ?? c.imageUrl ? { images: [{ url: (c.ogImageUrl ?? c.imageUrl)! }] } : undefined,
   };
 }
 
@@ -49,7 +50,7 @@ export default async function CountryPage({ params }: Props) {
         <header className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center">
           <div>
             <div className="flex items-center gap-4">
-              <CountryFlag iso2={c.iso2} name={c.name} className="h-10 w-15" />
+              <CountryFlag iso2={c.iso2} name={c.name} className="h-10 w-15" src={c.flagUrl} />
               <p className="text-xs font-semibold tracking-[0.2em] text-olive-700 uppercase">Food from</p>
             </div>
             <h1 className="mt-3 text-5xl font-semibold text-forest-900 sm:text-6xl">{c.name}</h1>
@@ -103,6 +104,17 @@ export default async function CountryPage({ params }: Props) {
         )}
         <AdSlot id="country_mid" />
       </Container>
+
+      {c.featured.length > 0 && (
+        <section aria-labelledby="featured" className="mt-16">
+          <Container>
+            <h2 id="featured" className="mb-8 text-3xl font-semibold text-forest-900">
+              Editors&apos; picks from {c.name}
+            </h2>
+            <RecipeGrid recipes={c.featured} />
+          </Container>
+        </section>
+      )}
 
       {c.dishes.length > 0 && (
         <section aria-labelledby="dishes" className="mt-16 bg-sand/60 py-14">

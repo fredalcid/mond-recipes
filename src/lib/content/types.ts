@@ -21,6 +21,8 @@ export type ArticleDetail = ArticleSummary & {
   body: string;
   updatedAt: string | null;
   seoTitle: string | null;
+  canonicalUrl?: string | null;
+  noindex?: boolean;
   metaDescription: string | null;
   recipes: RecipeSummary[];
 };
@@ -38,7 +40,7 @@ export type VideoSummary = {
   isFeatured: boolean;
 };
 
-export type VideoDetail = VideoSummary & { seoTitle: string | null; metaDescription: string | null; recipes: RecipeSummary[] };
+export type VideoDetail = VideoSummary & { seoTitle: string | null; metaDescription: string | null; canonicalUrl?: string | null; noindex?: boolean; recipes: RecipeSummary[] };
 
 export type Product = {
   id: string;

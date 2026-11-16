@@ -101,3 +101,61 @@ export async function saveChallenge(_prev: AdminFormState, fd: FormData): Promis
   revalidatePath("/community", "layout");
   return { status: "success", message: `Saved “${row.title}”.` };
 }
+
+const ROLES = ["super_admin", "editor", "moderator"] as const;
+
+/** Super admins set a member's team roles. The database keeps at least one super admin. */
+export async function setRoles(fd: FormData): Promise<void> {
+  const member = await getCurrentMember();
+  const db = await createClient();
+  const id = String(fd.get("id"));
+  const to = `/admin/members/${id}`;
+  if (!member?.roles.includes("super_admin") || !db || !UUID.test(id)) redirect(`${to}?error=not-allowed`);
+  const wanted = new Set(ROLES.filter((r) => fd.get(`role_${r}`) === "on"));
+  const { data: current } = await db!.from("user_roles").select("role").eq("user_id", id);
+  const have = new Set((current ?? []).map((r) => r.role as string));
+  const add = [...wanted].filter((r) => !have.has(r));
+  const remove = [...have].filter((r) => !wanted.has(r as (typeof ROLES)[number]));
+  if (add.length) {
+    const { error } = await db!.from("user_roles").insert(add.map((role) => ({ user_id: id, role })));
+    if (error) redirect(`${to}?error=failed`);
+  }
+  for (const role of remove) {
+    const { error } = await db!.from("user_roles").delete().eq("user_id", id).eq("role", role);
+    if (error) redirect(`${to}?error=${/at least one super admin/.test(error.message) ? "last-admin" : "failed"}`);
+  }
+  revalidatePath("/admin", "layout");
+  redirect(`${to}?done=roles`);
+}
+
+/** Moderators can lift a block between two members (for example after a resolved dispute). */
+export async function removeBlock(fd: FormData): Promise<void> {
+  const member = await getCurrentMember();
+  const db = await createClient();
+  const blocker = String(fd.get("blocker"));
+  const blocked = String(fd.get("blocked"));
+  const to = back(fd, "/admin/members");
+  if (canModerate(member) && db && UUID.test(blocker) && UUID.test(blocked)) {
+    await db.from("blocks").delete().eq("blocker_id", blocker).eq("blocked_id", blocked);
+  }
+  redirect(`${to}${to.includes("?") ? "&" : "?"}done=unblocked`);
+}
+
+/** Newsletter: unsubscribe or permanently delete one subscriber (super admins). */
+export async function manageSubscriber(fd: FormData): Promise<void> {
+  const member = await getCurrentMember();
+  const db = await createClient();
+  const id = Number(fd.get("id"));
+  const action = String(fd.get("action"));
+  const to = back(fd, "/admin/newsletter");
+  const sep = to.includes("?") ? "&" : "?";
+  if (!member?.roles.includes("super_admin") || !db || !Number.isInteger(id)) redirect(`${to}${sep}error=not-allowed`);
+  const { error } =
+    action === "delete"
+      ? await db!.from("newsletter_subscribers").delete().eq("id", id)
+      : await db!.from("newsletter_subscribers").update({ status: "unsubscribed", unsubscribed_at: new Date().toISOString() }).eq("id", id);
+  if (!error) {
+    await db!.from("admin_activity_log").insert({ actor_id: member!.id, action: action === "delete" ? "delete" : "unsubscribe", entity_type: "newsletter_subscribers", entity_id: String(id), details: {} });
+  }
+  redirect(`${to}${sep}${error ? "error=failed" : `done=${action === "delete" ? "deleted" : "unsubscribed"}`}`);
+}

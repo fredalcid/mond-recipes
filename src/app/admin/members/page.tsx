@@ -60,7 +60,7 @@ export default async function MembersAdmin({ searchParams }: Props) {
         {(data ?? []).map((m) => (
           <tr key={m.id} className="align-top">
             <td className="px-4 py-3">
-              <Link href={`/members/${m.username}`} className="font-semibold text-forest-900 hover:underline">
+              <Link href={`/admin/members/${m.id}`} className="font-semibold text-forest-900 hover:underline">
                 {m.display_name}
               </Link>
               <span className="block text-xs text-ink-muted">@{m.username}</span>

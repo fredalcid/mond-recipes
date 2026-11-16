@@ -30,8 +30,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: a.seoTitle ?? a.title,
     description: a.metaDescription ?? a.excerpt ?? undefined,
-    alternates: { canonical: `/articles/${a.slug}` },
-    robots: a.isSample ? { index: false, follow: true } : undefined,
+    alternates: { canonical: a.canonicalUrl ?? `/articles/${a.slug}` },
+    robots: a.isSample || a.noindex ? { index: false, follow: true } : undefined,
     openGraph: { type: "article", title: a.title, description: a.excerpt ?? undefined, publishedTime: a.publishedAt ?? undefined, images: a.imageUrl ? [a.imageUrl] : undefined },
   };
 }
