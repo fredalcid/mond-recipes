@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured, supabaseAnonKey, supabaseUrl } from "@/lib/env";
 
 /** Paths that need a signed-in member. Admin checks happen again on the server. */
-const MEMBER_PATHS = ["/account", "/submit", "/update-password"];
+const MEMBER_PATHS = ["/account", "/submit", "/update-password", "/admin"];
 
 /**
  * Refreshes the Supabase session cookie on every request and redirects

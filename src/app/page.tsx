@@ -4,27 +4,54 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { PhotoPlaceholder } from "@/components/ui/PhotoPlaceholder";
 import { SampleBadge, Badge } from "@/components/ui/Badge";
 import { LinkButton } from "@/components/ui/Button";
-import { RecipeCard } from "@/components/cards/RecipeCard";
+import { RecipeGrid } from "@/components/cards/RecipeCard";
 import { CountryCard } from "@/components/cards/CountryCard";
+import { getData, type CountrySummary, type RecipeSummary } from "@/lib/data";
 import { NewsletterForm } from "@/components/forms/NewsletterForm";
-import { formatMinutes, slugify } from "@/lib/format";
-import {
-  categories,
-  sampleArticles,
-  sampleCountries,
-  sampleDrinks,
-  sampleProducts,
-  sampleRecipes,
-} from "@/lib/sample-data";
+import { SearchBox } from "@/components/search/SearchBox";
+import { slugify } from "@/lib/format";
+import { categories, sampleArticles, sampleProducts } from "@/lib/sample-data";
 
-export default function HomePage() {
+export const revalidate = 300;
+
+async function loadHome() {
+  const data = getData();
+  try {
+    const [countries, popular, newest, drinks] = await Promise.all([
+      data.listCountries(),
+      data.searchRecipes({ kind: "food", sort: "popular" }),
+      data.searchRecipes({ kind: "food", sort: "newest" }),
+      data.searchRecipes({ kind: "drink", sort: "popular" }),
+    ]);
+    const featured = countries.filter((c) => c.isFeatured || c.recipeCount > 0)
+      .sort((a, b) => Number(b.isFeatured) - Number(a.isFeatured) || b.recipeCount - a.recipeCount)
+      .slice(0, 6);
+    // Trending uses real activity only: recipes members have actually saved or rated.
+    const trending = popular.items.filter((r) => r.saveCount > 0 || r.ratingCount > 0).slice(0, 4);
+    const hasActivity = popular.items.some((r) => r.saveCount > 0 || r.ratingCount > 0);
+    return {
+      sample: data.mode === "sample",
+      countries: featured,
+      popular: (hasActivity ? popular.items : newest.items).slice(0, 4),
+      popularIsNewest: !hasActivity,
+      trending,
+      drinks: drinks.items.slice(0, 4),
+    };
+  } catch (e) {
+    console.error(e);
+    return { sample: false, countries: [], popular: [], popularIsNewest: true, trending: [], drinks: [] };
+  }
+}
+
+export default async function HomePage() {
+  const home = await loadHome();
   return (
     <>
       <Hero />
-      <CountriesSection />
-      <PopularSection />
-      <TrendingSection />
-      <DrinksSection />
+      <CountriesSection countries={home.countries} sample={home.sample} />
+      <PopularSection recipes={home.popular} newest={home.popularIsNewest} />
+      <TrendingSection recipes={home.trending} />
+      <DrinksSection recipes={home.drinks} />
       <CategoriesSection />
       <CommunitySection />
       <ArticlesSection />
@@ -47,23 +74,10 @@ function Hero() {
             Explore recipes, discover cultures through food, share your creations, and find inspiration for your next meal.
           </p>
 
-          <form action="/recipes" method="get" role="search" className="mt-8">
-            <label htmlFor="hero-search" className="mb-2 block text-sm font-semibold text-ink">
-              Search by recipe name or ingredient
-            </label>
-            <div className="flex flex-col gap-2 rounded-3xl bg-white p-2 shadow-card sm:flex-row sm:rounded-full">
-              <input
-                id="hero-search"
-                name="q"
-                type="search"
-                placeholder="Try “jollof rice” or “chickpeas”"
-                className="min-h-12 flex-1 rounded-full px-5 text-base text-ink placeholder:text-ink-muted/70 focus:outline-none"
-              />
-              <button type="submit" className="min-h-12 rounded-full bg-forest-900 px-7 font-semibold text-cream hover:bg-forest-800">
-                Search
-              </button>
-            </div>
-          </form>
+          <div className="mt-8">
+            <p className="mb-2 text-sm font-semibold text-ink">Search by recipe name or ingredient</p>
+            <SearchBox label="Search by recipe name or ingredient" placeholder="Try “jollof rice” or “mint”" />
+          </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
             <LinkButton href="/recipes" variant="primary">
@@ -71,6 +85,9 @@ function Hero() {
             </LinkButton>
             <LinkButton href="/countries" variant="secondary">
               Browse by country
+            </LinkButton>
+            <LinkButton href="/ingredients" variant="ghost">
+              Cook with what you have
             </LinkButton>
           </div>
         </div>
@@ -87,7 +104,8 @@ function Hero() {
   );
 }
 
-function CountriesSection() {
+function CountriesSection({ countries, sample }: { countries: CountrySummary[]; sample: boolean }) {
+  if (countries.length === 0) return null;
   return (
     <section aria-labelledby="countries-title" className="py-16">
       <Container>
@@ -99,9 +117,9 @@ function CountriesSection() {
           action={{ label: "All countries", href: "/countries" }}
         />
         <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {sampleCountries.map((c) => (
+          {countries.map((c) => (
             <li key={c.slug}>
-              <CountryCard country={{ ...c, sample: true }} />
+              <CountryCard country={c} sample={sample} />
             </li>
           ))}
         </ul>
@@ -110,34 +128,32 @@ function CountriesSection() {
   );
 }
 
-function PopularSection() {
+function PopularSection({ recipes, newest }: { recipes: RecipeSummary[]; newest: boolean }) {
+  if (recipes.length === 0) return null;
   return (
     <section aria-labelledby="popular-title" className="bg-sand/60 py-16">
       <Container>
         <SectionHeading
           id="popular-title"
-          eyebrow="Popular recipes"
-          title="Loved by home cooks"
+          eyebrow={newest ? "New recipes" : "Popular recipes"}
+          title={newest ? "Fresh from the kitchen" : "Loved by home cooks"}
           intro="Ratings and review counts come only from real members. Until then, recipes show “Not yet rated”."
           action={{ label: "All recipes", href: "/recipes" }}
         />
-        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {sampleRecipes.map((r) => (
-            <li key={r.title}>
-              <RecipeCard recipe={{ ...r, sample: true }} />
-            </li>
-          ))}
-        </ul>
+        <RecipeGrid recipes={recipes} />
       </Container>
     </section>
   );
 }
 
-function TrendingSection() {
+function TrendingSection({ recipes }: { recipes: RecipeSummary[] }) {
   return (
     <section aria-labelledby="trending-title" className="py-16">
       <Container>
         <SectionHeading id="trending-title" eyebrow="Trending now" title="What people are cooking" />
+        {recipes.length > 0 ? (
+          <RecipeGrid recipes={recipes} />
+        ) : (
         <div className="flex flex-col items-start gap-4 rounded-card border border-dashed border-sand-strong bg-white/60 p-8 sm:flex-row sm:items-center">
           <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-forest-100 text-forest-900">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -150,12 +166,14 @@ function TrendingSection() {
             <p className="mt-1 text-sm text-ink-muted">This list is calculated from real activity only. It is never filled in by hand.</p>
           </div>
         </div>
+        )}
       </Container>
     </section>
   );
 }
 
-function DrinksSection() {
+function DrinksSection({ recipes }: { recipes: RecipeSummary[] }) {
+  if (recipes.length === 0) return null;
   return (
     <section aria-labelledby="drinks-title" className="bg-forest-900 py-16 text-cream">
       <Container>
@@ -171,27 +189,7 @@ function DrinksSection() {
             All drinks <span aria-hidden="true">→</span>
           </Link>
         </div>
-        <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {sampleDrinks.map((d) => (
-            <li key={d.title}>
-              <article className="flex h-full flex-col overflow-hidden rounded-card bg-forest-800">
-                <div className="relative">
-                  <PhotoPlaceholder tone={d.tone} className="aspect-square" />
-                  <span className="absolute top-3 left-3">
-                    <SampleBadge />
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col gap-2 p-5">
-                  <p className="text-xs font-semibold tracking-[0.14em] text-gold-500 uppercase">{d.category}</p>
-                  <h3 className="text-xl font-semibold">{d.title}</h3>
-                  <p className="mt-auto text-sm text-cream/75">
-                    {d.origin} · {formatMinutes(d.minutes)}
-                  </p>
-                </div>
-              </article>
-            </li>
-          ))}
-        </ul>
+        <RecipeGrid recipes={recipes} tone="dark" />
       </Container>
     </section>
   );

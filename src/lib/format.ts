@@ -26,3 +26,9 @@ export function formatRating(average: number | null | undefined, count: number |
   const reviews = count === 1 ? "1 rating" : `${count.toLocaleString("en-CA")} ratings`;
   return `${average.toFixed(1)} · ${reviews}`;
 }
+
+export function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" });
+}

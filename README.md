@@ -2,7 +2,10 @@
 
 International recipe discovery and community platform. **Discover • Cook • Share.**
 
-This repository contains **Phase 1 — Foundation and Design**: the project setup, the brand design system, the responsive navigation, the homepage, the footer, the database foundation with security rules, and member registration/sign-in.
+This repository contains:
+
+- **Phase 1 — Foundation and Design:** project setup, brand design system, navigation, homepage, footer, database foundation with security rules, member registration and sign-in.
+- **Phase 2 — Recipe Engine:** recipe search with combined filters, ingredient finder, recipe and drink pages (servings, metric/US units, cooking mode, timers, save, share, print), country and region pages, Drinks & Tea, and a basic admin for adding and publishing recipes.
 
 Later phases (recipe engine, editorial and shop, community, administration, launch testing) build on this code.
 
@@ -85,7 +88,10 @@ npm run test:db    # security tests; needs DATABASE_URL pointing at an EMPTY tes
 2. **SQL Editor** → run, in this order:
    1. `supabase/migrations/20261116000100_foundation.sql`
    2. `supabase/migrations/20261116000200_security.sql`
-   3. `supabase/seed.sql`
+   3. `supabase/migrations/20261116000300_recipe_engine.sql`
+   4. `supabase/migrations/20261116000400_recipe_admin.sql`
+   5. `supabase/seed.sql`
+   6. *(Optional, for a staging site only)* `supabase/sample_content.sql`: the 13 sample recipes. Remove them before launch with `delete from public.recipes where is_sample;`
 
    (Or with the Supabase CLI: `supabase link` then `supabase db push`, then run `seed.sql`.)
 3. **Authentication → Sign In / Providers → Email:** keep **Confirm email** turned on.
@@ -127,6 +133,29 @@ After deploying, update the Supabase **Site URL** and **Redirect URLs** to the l
 
 ---
 
+## Pages
+
+| Address | What it is |
+|---|---|
+| `/recipes` | Search and filters (country, meal or dish, cuisine, diet, time, difficulty, rating), sorting, result count, pagination |
+| `/recipes/<recipe>` | Recipe page |
+| `/ingredients` | "Cook with what you have": recipes ranked by how many of your ingredients they use, with what's missing |
+| `/drinks-tea`, `/drinks-tea/<drink>` | Drinks & Tea search and drink pages |
+| `/countries`, `/countries/<country>`, `/countries/<country>/<region>` | Country discovery, generated from the database |
+| `/admin`, `/admin/recipes` | Staff only: dashboard and recipe editor |
+
+When Supabase isn't connected, the site runs on the labelled **sample library** (`src/lib/demo/library.ts`), so every page can be reviewed. Once Supabase is connected, the site reads only from the database.
+
+## Adding recipes (admin)
+
+1. Sign in with an account that has the **editor** or **super_admin** role (README step 8 above).
+2. Go to `/admin/recipes` → **New recipe**.
+3. Fill in the recipe, upload a photo you own or are licensed to use, choose countries, categories, diets and allergens, then add ingredients and steps.
+4. Save as **Draft** while working, then set **Published** when it's ready. Publishing requires ingredients, steps and at least one country.
+5. Only give **Editorially reviewed** or **Test-kitchen verified** badges to recipes that actually went through that review. The test-kitchen badge asks you to confirm it.
+
+To let a country page appear in Google, set `is_indexable = true` on that country in Supabase once it has a real introduction and food-culture text and some recipes (a country admin screen arrives in Phase 5).
+
 ## What works in Phase 1
 
 - Brand design system based on the logo colours, with consistent buttons, fields, badges, cards and section headings
@@ -146,9 +175,24 @@ Homepage recipes, countries, drinks, articles and products are **sample content*
 
 Photo areas show placeholders until properly licensed food photography is uploaded.
 
-## Known limitations of Phase 1
+## What works in Phase 2
 
-- Recipe, country, drinks, community, articles and shop pages show a clear "Coming in Phase N" page.
+- Search by name, ingredient (including other names like "scallions"), country, region, cuisine, meal/dish, diet, drink type, time, difficulty and rating; all filters combine; typos and accents tolerated
+- Search suggestions while typing, recent searches (kept only in the visitor's own browser), result counts, four sort orders, pagination, helpful empty states
+- Ingredient finder with best match first and the missing ingredients listed
+- Recipe and drink pages: servings adjuster, As written / Metric / US units (density-aware, approximate weights marked ≈), print layout, share, save (signed-in members), cooking mode with progress, timers and keep-screen-awake, dietary and allergen information, tips, substitutions, related recipes, breadcrumbs, structured data (only from real data; never on sample recipes)
+- Verification badges only as set by editors; test-kitchen badge requires confirmation
+- Country pages generated from the database with flag, introduction, food culture, regions, dishes, drinks and cuisines; thin pages are kept out of Google
+- Admin dashboard (real counts) and recipe editor with photo upload, saved in one database transaction, version history and audit log
+- Sitemap lists only published, non-sample recipes and countries marked indexable
+
+## Known limitations
+
+- Community, articles and shop pages show a clear "Coming in Phase N" page.
+- Ratings, reviews and member cooking photos arrive with the community (Phase 4). Recipe pages say "No ratings yet".
+- Nutrition information isn't stored yet; recipe pages say so.
+- The admin covers recipes only. Countries, regions, cuisines and ingredient densities are edited in Supabase until the full admin (Phase 5).
+- The admin and saving were tested through the database functions and form validation, but not yet against a live Supabase project.
 - Newsletter confirmation emails are sent once the email service is connected (Phase 3). Until then sign-ups are stored as *pending* and nothing is sent.
 - Profile editing, saved recipes, notification settings and account deletion arrive with the community (Phase 4).
 - Spam protection on registration (Cloudflare Turnstile) and rate limiting are added in Phase 4. Supabase's built-in auth rate limits apply until then.

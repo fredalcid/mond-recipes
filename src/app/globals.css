@@ -79,3 +79,18 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Printing a recipe: just the recipe, on white paper. */
+@media print {
+  body > header,
+  body > footer,
+  [data-print-hide] {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  a {
+    text-decoration: none;
+  }
+}
