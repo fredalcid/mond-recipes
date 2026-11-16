@@ -42,14 +42,17 @@ select set_config('request.jwt.claim.sub', '', false);
 select pg_temp.expect((select count(*) > 200 from public.countries), 'visitors can read countries');
 select pg_temp.expect_fail($$insert into public.countries (iso2, slug, name) values ('ZZ','zz','Nowhere')$$, 'visitor adding a country');
 select pg_temp.expect((select count(*) = 0 from public.newsletter_subscribers), 'visitors cannot see subscribers');
-select public.subscribe_newsletter('Reader@Example.com', 'consent text', 'test', '203.0.113.9');
-select public.subscribe_newsletter('reader@example.com', 'consent text', 'test', 'not-an-ip');
-select pg_temp.expect_fail($$select public.subscribe_newsletter('not-an-email', 'consent', 'test', null)$$, 'newsletter with an invalid email');
-select pg_temp.expect_fail($$select public.subscribe_newsletter('a@b.co', '', 'test', null)$$, 'newsletter without consent');
+select pg_temp.expect_fail($$select * from public.newsletter_request('reader@example.com', 'consent', 'test', null)$$,
+  'visitor calling the newsletter sign-up function directly (server only)');
 select pg_temp.expect_fail($$insert into public.user_roles (user_id, role) values ('00000000-0000-0000-0000-00000000000d','super_admin')$$, 'visitor granting a role');
 reset role;
-select pg_temp.expect((select count(*) = 1 and bool_and(status = 'pending') and bool_and(consent_ip = '203.0.113.9'::inet or consent_ip is null)
-  from public.newsletter_subscribers), 'duplicate sign-ups are merged and stay pending until confirmed');
+set role service_role;
+select * from public.newsletter_request('Reader@Example.com', 'consent text', 'test', '203.0.113.9');
+select * from public.newsletter_request('reader@example.com', 'consent text', 'test', 'not-an-ip');
+select pg_temp.expect_fail($$select * from public.newsletter_request('not-an-email', 'consent', 'test', null)$$, 'newsletter with an invalid email');
+select pg_temp.expect_fail($$select * from public.newsletter_request('a@b.co', '', 'test', null)$$, 'newsletter without consent');
+reset role;
+select pg_temp.expect((select count(*) = 1 and bool_and(status = 'pending') from public.newsletter_subscribers), 'duplicate sign-ups are merged and stay pending until confirmed');
 
 -- ---------------------------------------------------------------- unverified member
 set role authenticated;

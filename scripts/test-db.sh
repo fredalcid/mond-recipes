@@ -11,3 +11,4 @@ $PSQL -o /dev/null -f supabase/tests/security_test.sql 2>&1 | sed "s/^psql:[^ ]*
 $PSQL -f supabase/sample_content.sql
 $PSQL -o /dev/null -f supabase/tests/search_test.sql 2>&1 | sed "s/^psql:[^ ]* NOTICE:  //"
 $PSQL -o /dev/null -f supabase/tests/admin_test.sql 2>&1 | sed "s/^psql:[^ ]* NOTICE:  //"
+$PSQL -o /dev/null -f supabase/tests/phase3_test.sql 2>&1 | sed "s/^psql:[^ ]* NOTICE:  //"

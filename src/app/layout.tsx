@@ -4,6 +4,8 @@ import "@fontsource-variable/inter";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { ConsentManager } from "@/components/privacy/ConsentManager";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -35,7 +37,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main id="main" className="flex-1">
           {children}
         </main>
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <AdSlot id="footer" />
+        </div>
         <Footer />
+        <ConsentManager />
       </body>
     </html>
   );

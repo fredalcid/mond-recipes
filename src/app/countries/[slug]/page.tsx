@@ -11,6 +11,7 @@ import { CountryFlag } from "@/components/cards/CountryCard";
 import { LinkButton } from "@/components/ui/Button";
 import { getData } from "@/lib/data";
 import { slugify } from "@/lib/format";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -100,6 +101,7 @@ export default async function CountryPage({ params }: Props) {
             </ul>
           </section>
         )}
+        <AdSlot id="country_mid" />
       </Container>
 
       {c.dishes.length > 0 && (

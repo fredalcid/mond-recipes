@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { NewsletterForm } from "@/components/forms/NewsletterForm";
 import { footerNav, primaryNav, site } from "@/lib/site";
+import { CookieSettingsButton } from "@/components/privacy/ConsentManager";
 
 /** Social profiles are listed here once the accounts exist (managed in site settings in Phase 5). */
 const socialLinks: { label: string; href: string }[] = [];
@@ -69,7 +70,10 @@ export function Footer() {
       <div className="border-t border-forest-800">
         <Container className="flex flex-wrap items-center justify-between gap-3 py-6 text-xs text-cream/70">
           <p>© {new Date().getFullYear()} Mònd Recipes. All rights reserved.</p>
-          <p>Recipes and photos on this site are original or used with permission.</p>
+          <div className="flex flex-wrap items-center gap-4">
+            <CookieSettingsButton className="min-h-11 underline-offset-4 hover:text-cream hover:underline" />
+            <p>Recipes and photos on this site are original or used with permission.</p>
+          </div>
         </Container>
       </div>
     </footer>

@@ -90,8 +90,9 @@ npm run test:db    # security tests; needs DATABASE_URL pointing at an EMPTY tes
    2. `supabase/migrations/20261116000200_security.sql`
    3. `supabase/migrations/20261116000300_recipe_engine.sql`
    4. `supabase/migrations/20261116000400_recipe_admin.sql`
-   5. `supabase/seed.sql`
-   6. *(Optional, for a staging site only)* `supabase/sample_content.sql`: the 13 sample recipes. Remove them before launch with `delete from public.recipes where is_sample;`
+   5. `supabase/migrations/20261116000500_editorial_shop.sql`
+   6. `supabase/seed.sql`
+   7. *(Optional, for a staging site only)* `supabase/sample_content.sql`: the 13 sample recipes. Remove them before launch with `delete from public.recipes where is_sample;`
 
    (Or with the Supabase CLI: `supabase link` then `supabase db push`, then run `seed.sql`.)
 3. **Authentication → Sign In / Providers → Email:** keep **Confirm email** turned on.
@@ -104,7 +105,7 @@ npm run test:db    # security tests; needs DATABASE_URL pointing at an EMPTY tes
    - *Reset password*: make the button link
      `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/update-password`
 6. **Authentication → Emails → SMTP settings:** connect a real email service (e.g. Resend or Postmark) with your domain. Supabase's built-in sender is for testing only and sends very few emails per hour.
-7. **Project Settings → API:** copy the Project URL and the anon/publishable key into your environment variables.
+7. **Project Settings → API:** copy the Project URL and the anon/publishable key into your environment variables. Also copy the **service_role / secret** key into `SUPABASE_SERVICE_ROLE_KEY` (server only, never `NEXT_PUBLIC_`).
 8. Make yourself Super Admin: register on the site, confirm your email, then run in the SQL Editor:
 
    ```sql
@@ -125,11 +126,33 @@ Hostinger runs Next.js as a **Node.js web app**. This needs a **Business web hos
    - Node.js version: **22** (20 or newer is required)
    - Build command: `npm run build`
    - Start command: `npm start`
-5. **Environment variables:** add the three values from `.env.example` **before the first build**.
+5. **Environment variables:** add the values from `.env.example` **before the first build** (values starting with `NEXT_PUBLIC_` are built into the site, so rebuild after changing them).
 6. Deploy. Then connect your domain and turn on the free SSL certificate.
 7. Every push to `main` can be redeployed from hPanel.
 
 After deploying, update the Supabase **Site URL** and **Redirect URLs** to the live domain.
+
+### Email (newsletter and contact form)
+
+1. Create a Resend account, add your domain and add the DNS records it shows (in Hostinger → Domains → DNS).
+2. Set `RESEND_API_KEY`, `EMAIL_FROM` (an address on the verified domain) and `CONTACT_EMAIL` (your inbox).
+3. Use the same Resend account as Supabase's custom SMTP (step 6 of the Supabase setup) so sign-up emails come from your domain too.
+
+### Weekly link check
+
+Shop links are checked so broken products are flagged in the admin. In hPanel → **Advanced → Cron Jobs**, add a weekly job:
+
+```
+curl -s -H "Authorization: Bearer YOUR_CRON_SECRET" https://www.mondrecipes.com/api/cron/check-links
+```
+
+### Advertising (Google AdSense)
+
+1. Apply at adsense.google.com once the site has real, original content (thin or sample content is usually refused).
+2. When approved, set `NEXT_PUBLIC_ADSENSE_CLIENT` (`ca-pub-…`) and rebuild.
+3. Create ad units in AdSense, then paste each unit ID in **Admin → Advertising** and switch the placement on.
+4. Add the `ads.txt` line Google gives you to `public/ads.txt`.
+5. Visitors in the EEA, UK and Switzerland: Google requires a Google-certified consent platform for personalised ads there. The built-in banner works for Canada and Quebec (ads and analytics only load after consent), but add a certified CMP (for example Google's own "Privacy & messaging") before targeting European traffic.
 
 ---
 
@@ -142,7 +165,13 @@ After deploying, update the Supabase **Site URL** and **Redirect URLs** to the l
 | `/ingredients` | "Cook with what you have": recipes ranked by how many of your ingredients they use, with what's missing |
 | `/drinks-tea`, `/drinks-tea/<drink>` | Drinks & Tea search and drink pages |
 | `/countries`, `/countries/<country>`, `/countries/<country>/<region>` | Country discovery, generated from the database |
-| `/admin`, `/admin/recipes` | Staff only: dashboard and recipe editor |
+| `/articles`, `/articles/<article>` | Articles with topics, related recipes and sharing |
+| `/videos`, `/videos/<video>` | YouTube videos (loaded only when the visitor presses play) |
+| `/shop`, `/shop/<category>` | Affiliate product catalog. Every product opens on the retailer's website |
+| `/go/<product>` | Counts the click (no personal data) and sends the visitor to the retailer |
+| `/about`, `/contact`, `/advertise`, `/affiliate-disclosure` | Information pages |
+| `/newsletter/confirm`, `/newsletter/unsubscribe` | Newsletter double opt-in links |
+| `/admin` … | Staff only: dashboard, recipes, articles, videos, shop (with click report and link checks), advertising and newsletter (super admins) |
 
 When Supabase isn't connected, the site runs on the labelled **sample library** (`src/lib/demo/library.ts`), so every page can be reviewed. Once Supabase is connected, the site reads only from the database.
 
@@ -186,15 +215,27 @@ Photo areas show placeholders until properly licensed food photography is upload
 - Admin dashboard (real counts) and recipe editor with photo upload, saved in one database transaction, version history and audit log
 - Sitemap lists only published, non-sample recipes and countries marked indexable
 
+## What works in Phase 3
+
+- Articles: Markdown editor, hero image, topics, related recipes, featured, SEO fields, Article structured data
+- Videos: paste a YouTube link; privacy-friendly embed (youtube-nocookie) that loads only when the visitor presses play
+- Shop: categories, retailers with automatic tracking codes, featured and **Sponsored** labels, no prices, no cart or checkout; links use `rel="sponsored nofollow"`
+- Outbound click tracking without cookies or personal data, bot filtering, click report by period, weekly broken-link check
+- Advertising: eight placements managed in the admin, every ad labelled “Advertisement”, fallbacks (newsletter or your own promotion), nothing loads before consent
+- Cookie banner (Accept / Reject / Choose), Google Consent Mode default “denied”, “Cookie settings” link in the footer. The banner only appears once ads or analytics are configured
+- Newsletter double opt-in: confirmation email, 7-day link, one-click unsubscribe, hashed tokens, rate limits, CSV export of confirmed subscribers
+- Contact form (with topic, spam honeypot and rate limit), About, Advertise and Affiliate Disclosure pages
+
 ## Known limitations
 
-- Community, articles and shop pages show a clear "Coming in Phase N" page.
+- Community pages show a clear "Coming in Phase 4" page.
+- Email sending, AdSense, Analytics and the link checker were built against the services' documented APIs but not tested with live accounts. They stay off until their keys are set.
+- Shop sample products have no links and are labelled “Sample”; the Shop needs real products from affiliate programs you have joined.
 - Ratings, reviews and member cooking photos arrive with the community (Phase 4). Recipe pages say "No ratings yet".
 - Nutrition information isn't stored yet; recipe pages say so.
 - The admin covers recipes only. Countries, regions, cuisines and ingredient densities are edited in Supabase until the full admin (Phase 5).
 - The admin and saving were tested through the database functions and form validation, but not yet against a live Supabase project.
-- Newsletter confirmation emails are sent once the email service is connected (Phase 3). Until then sign-ups are stored as *pending* and nothing is sent.
 - Profile editing, saved recipes, notification settings and account deletion arrive with the community (Phase 4).
-- Spam protection on registration (Cloudflare Turnstile) and rate limiting are added in Phase 4. Supabase's built-in auth rate limits apply until then.
-- Legal pages (Privacy, Terms, Cookies) must be written and reviewed by a lawyer before launch.
+- Spam protection on registration (Cloudflare Turnstile) is added in Phase 4. Newsletter and contact forms are rate limited now.
+- Legal pages (Privacy, Terms, Cookies) and the Affiliate Disclosure draft must be written or checked and reviewed by a lawyer before launch.
 - The logo file is small (312 px). A high-resolution PNG or SVG is needed for print and large banners.

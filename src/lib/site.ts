@@ -55,27 +55,9 @@ export const plannedPages: Record<string, { title: string; phase: number; summar
     phase: 4,
     summary: "Member recipes, cooking photos, comments, follows and community challenges.",
   },
-  articles: {
-    title: "Articles & Videos",
-    phase: 3,
-    summary: "Food culture, country guides, cooking techniques and video tutorials.",
-  },
-  shop: {
-    title: "Shop",
-    phase: 3,
-    summary: "Kitchen products and cooking essentials, each linking to an outside retailer. No checkout on this site.",
-  },
-  about: { title: "About Mònd Recipes", phase: 3, summary: "Who we are and how recipes are tested and reviewed." },
-  contact: { title: "Contact", phase: 3, summary: "A contact form for readers, members and partners." },
-  advertise: { title: "Advertise With Us", phase: 3, summary: "Advertising and partnership information." },
   privacy: { title: "Privacy Policy", phase: 6, summary: "Drafted before launch and reviewed by a lawyer." },
   terms: { title: "Terms of Service", phase: 6, summary: "Drafted before launch and reviewed by a lawyer." },
   cookies: { title: "Cookie Policy", phase: 6, summary: "Drafted with the consent tool before launch." },
-  "affiliate-disclosure": {
-    title: "Affiliate Disclosure",
-    phase: 3,
-    summary: "How affiliate links work on Mònd Recipes. Published together with the Shop.",
-  },
   "community-guidelines": {
     title: "Community Guidelines",
     phase: 4,

@@ -6,6 +6,7 @@ import { RecipeGrid } from "@/components/cards/RecipeCard";
 import { SampleNotice } from "@/components/ui/SampleNotice";
 import { SearchBox } from "./SearchBox";
 import { FilterForm } from "./FilterForm";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { getData, type FilterOptions, type RecipeKind, type SearchResult, type SearchParams } from "@/lib/data";
 import { toQueryParams } from "@/lib/search-params";
 
@@ -90,6 +91,7 @@ export async function RecipeSearchView({
                 ? `No ${noun}s found`
                 : `${result.total.toLocaleString("en-CA")} ${noun}${result.total === 1 ? "" : "s"}${params.q ? ` for “${params.q}”` : ""}`}
             </h2>
+            <AdSlot id="search_results" />
             {result.total === 0 ? (
               <EmptyState path={path} filtered={filtered} q={params.q} noun={noun} />
             ) : (

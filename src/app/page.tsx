@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { PhotoPlaceholder } from "@/components/ui/PhotoPlaceholder";
-import { SampleBadge, Badge } from "@/components/ui/Badge";
+import { Badge } from "@/components/ui/Badge";
 import { LinkButton } from "@/components/ui/Button";
 import { RecipeGrid } from "@/components/cards/RecipeCard";
 import { CountryCard } from "@/components/cards/CountryCard";
@@ -10,7 +10,12 @@ import { getData, type CountrySummary, type RecipeSummary } from "@/lib/data";
 import { NewsletterForm } from "@/components/forms/NewsletterForm";
 import { SearchBox } from "@/components/search/SearchBox";
 import { slugify } from "@/lib/format";
-import { categories, sampleArticles, sampleProducts } from "@/lib/sample-data";
+import { categories } from "@/lib/sample-data";
+import { getContent, type ArticleSummary, type Product, type VideoSummary } from "@/lib/content";
+import { ArticleCard } from "@/components/content/ArticleCard";
+import { VideoCard } from "@/components/content/VideoCard";
+import { ProductCard } from "@/components/shop/ProductCard";
+import { AdSlot } from "@/components/ads/AdSlot";
 
 export const revalidate = 300;
 
@@ -29,7 +34,16 @@ async function loadHome() {
     // Trending uses real activity only: recipes members have actually saved or rated.
     const trending = popular.items.filter((r) => r.saveCount > 0 || r.ratingCount > 0).slice(0, 4);
     const hasActivity = popular.items.some((r) => r.saveCount > 0 || r.ratingCount > 0);
+    const content = getContent();
+    const [articles, videos, products] = await Promise.all([
+      content.listArticles({ pageSize: 3 }).then((r) => r.items).catch(() => []),
+      content.listVideos(3).catch(() => []),
+      content.listProducts().catch(() => []),
+    ]);
     return {
+      articles,
+      videos,
+      products: [...products.filter((p) => p.isFeatured), ...products.filter((p) => !p.isFeatured)].slice(0, 4),
       sample: data.mode === "sample",
       countries: featured,
       popular: (hasActivity ? popular.items : newest.items).slice(0, 4),
@@ -39,7 +53,7 @@ async function loadHome() {
     };
   } catch (e) {
     console.error(e);
-    return { sample: false, countries: [], popular: [], popularIsNewest: true, trending: [], drinks: [] };
+    return { articles: [], videos: [], products: [], sample: false, countries: [], popular: [], popularIsNewest: true, trending: [], drinks: [] };
   }
 }
 
@@ -51,11 +65,14 @@ export default async function HomePage() {
       <CountriesSection countries={home.countries} sample={home.sample} />
       <PopularSection recipes={home.popular} newest={home.popularIsNewest} />
       <TrendingSection recipes={home.trending} />
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <AdSlot id="home_mid" />
+      </div>
       <DrinksSection recipes={home.drinks} />
       <CategoriesSection />
       <CommunitySection />
-      <ArticlesSection />
-      <ShopSection />
+      <ArticlesSection articles={home.articles} videos={home.videos} />
+      <ShopSection products={home.products} />
       <NewsletterSection />
     </>
   );
@@ -255,38 +272,37 @@ function CommunitySection() {
   );
 }
 
-function ArticlesSection() {
+function ArticlesSection({ articles, videos }: { articles: ArticleSummary[]; videos: VideoSummary[] }) {
+  if (articles.length === 0 && videos.length === 0) return null;
   return (
     <section aria-labelledby="articles-title" className="py-16">
       <Container>
-        <SectionHeading
-          id="articles-title"
-          eyebrow="Articles & videos"
-          title="Learn, cook, explore"
-          action={{ label: "All articles & videos", href: "/articles" }}
-        />
-        <ul className="grid gap-6 md:grid-cols-3">
-          {sampleArticles.map((a) => (
-            <li key={a.title}>
-              <article className="flex h-full flex-col gap-4">
-                <div className="relative">
-                  <PhotoPlaceholder tone={a.tone} className="aspect-16/10 rounded-card" />
-                  <span className="absolute top-3 left-3">
-                    <SampleBadge />
-                  </span>
-                </div>
-                <p className="text-xs font-semibold tracking-[0.14em] text-olive-700 uppercase">{a.kind}</p>
-                <h3 className="text-xl leading-snug font-semibold text-forest-900">{a.title}</h3>
-              </article>
-            </li>
-          ))}
-        </ul>
+        <SectionHeading id="articles-title" eyebrow="Articles & videos" title="Learn, cook, explore" action={{ label: "All articles & videos", href: "/articles" }} />
+        {articles.length > 0 && (
+          <ul className="grid gap-10 md:grid-cols-3">
+            {articles.map((a) => (
+              <li key={a.id}>
+                <ArticleCard article={a} />
+              </li>
+            ))}
+          </ul>
+        )}
+        {videos.length > 0 && (
+          <ul className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {videos.map((v) => (
+              <li key={v.id}>
+                <VideoCard video={v} />
+              </li>
+            ))}
+          </ul>
+        )}
       </Container>
     </section>
   );
 }
 
-function ShopSection() {
+function ShopSection({ products }: { products: Product[] }) {
+  if (products.length === 0) return null;
   return (
     <section aria-labelledby="shop-title" className="bg-sand/60 py-16">
       <Container>
@@ -294,25 +310,13 @@ function ShopSection() {
           id="shop-title"
           eyebrow="Shop"
           title="Kitchen essentials we recommend"
-          intro="Every product links to an outside retailer. Mònd Recipes may earn a commission on purchases made through these links."
+          intro="Every product opens on the retailer's website. Mònd Recipes may earn a commission when you buy through these links."
           action={{ label: "Visit the shop", href: "/shop" }}
         />
         <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {sampleProducts.map((p) => (
-            <li key={p.name}>
-              <article className="flex h-full flex-col overflow-hidden rounded-card bg-white shadow-card">
-                <div className="relative">
-                  <PhotoPlaceholder tone={p.tone} label="Product photo" className="aspect-square" />
-                  <span className="absolute top-3 left-3">
-                    <SampleBadge />
-                  </span>
-                </div>
-                <div className="flex flex-1 flex-col gap-2 p-5">
-                  <p className="text-xs font-semibold tracking-[0.14em] text-olive-700 uppercase">{p.category}</p>
-                  <h3 className="text-lg font-semibold text-forest-900">{p.name}</h3>
-                  <p className="mt-auto pt-2 text-sm text-ink-muted">Retailer links are added in Phase 3.</p>
-                </div>
-              </article>
+          {products.map((p) => (
+            <li key={p.id}>
+              <ProductCard product={p} from="/" />
             </li>
           ))}
         </ul>

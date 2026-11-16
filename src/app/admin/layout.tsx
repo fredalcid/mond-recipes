@@ -32,16 +32,25 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <span className="font-semibold text-forest-900">Admin</span>
         <nav aria-label="Admin">
           <ul className="flex flex-wrap gap-1">
-            <li>
-              <Link href="/admin" className="inline-flex min-h-10 items-center rounded-full px-3 font-medium hover:bg-sand">
-                Dashboard
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/recipes" className="inline-flex min-h-10 items-center rounded-full px-3 font-medium hover:bg-sand">
-                Recipes
-              </Link>
-            </li>
+            {[
+              ["/admin", "Dashboard"],
+              ["/admin/recipes", "Recipes"],
+              ["/admin/articles", "Articles"],
+              ["/admin/videos", "Videos"],
+              ["/admin/shop", "Shop"],
+              ...(member.roles.includes("super_admin")
+                ? [
+                    ["/admin/ads", "Advertising"],
+                    ["/admin/newsletter", "Newsletter"],
+                  ]
+                : []),
+            ].map(([href, label]) => (
+              <li key={href}>
+                <Link href={href} className="inline-flex min-h-10 items-center rounded-full px-3 font-medium hover:bg-sand">
+                  {label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
         <span className="ml-auto text-ink-muted">

@@ -9,6 +9,7 @@ import { CountryFlag } from "@/components/cards/CountryCard";
 import { VerificationBadge } from "./VerificationBadge";
 import { RecipeActions } from "./RecipeActions";
 import { RecipeInteractive } from "./RecipeInteractive";
+import { AdSlot } from "@/components/ads/AdSlot";
 import { formatMinutes, formatRating } from "@/lib/format";
 import { recipeHref, type RecipeDetail, type RecipeSummary } from "@/lib/data/types";
 import { site } from "@/lib/site";
@@ -135,6 +136,8 @@ export function RecipeView({ recipe, related, crumbs }: { recipe: RecipeDetail; 
           </p>
         )}
 
+        <AdSlot id="recipe_top" />
+
         <div className="mt-10">
           <RecipeInteractive
             title={recipe.title}
@@ -161,6 +164,8 @@ export function RecipeView({ recipe, related, crumbs }: { recipe: RecipeDetail; 
             )}
           </div>
         )}
+
+        <AdSlot id="recipe_bottom" />
 
         <div className="mt-12 grid gap-6 md:grid-cols-2" data-print-hide>
           <section className="rounded-card border border-sand-strong bg-white p-6">
